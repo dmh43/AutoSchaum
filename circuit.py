@@ -20,4 +20,16 @@ __author__ = 'Dany'
         I = YV; where I and V are vectors and Y is a matrix
 """
 
-class Circuit
+from components import *
+
+class Circuit:
+    def __init__(self, netlist_filename):
+        netlist = open('netlist_filename', 'r')
+        self.name = netlist.readline()
+        while True:
+            #do while loop which looks for first component in netlist
+            __nextline = netlist.readline()
+            if __nextline[0] in component_types: #first letter tells us component list started
+                break
+    def __calc_admittance(self):
+#write wrapper for dealing with tuples representing complex numbers!
