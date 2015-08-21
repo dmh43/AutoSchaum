@@ -20,4 +20,4 @@ __author__ = 'Dany'
         I = YV; where I and V are vectors and Y is a matrix
 """
 
-def
+class Circuit
