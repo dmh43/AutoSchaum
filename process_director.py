@@ -7,13 +7,14 @@ class ProcessDirector:
     IDS = ["ID12345", "ID01234"]
     director = ProcessDirector()
     for id in IDS:
-        director.construct(id)
+        director.construct(id, idClass)
     """
     def __init__(self):
         self.allClasses = []
 
-    def construct(self, builderName, class_type):
-        targetClass = getattr(class_type, builderName)
-        instance = targetClass()
+    def construct(self, buildername, class_type):
+        targetclass = getattr(class_type, buildername)
+        instance = targetclass()
         self.allClasses.append(instance)
+        return instance
 

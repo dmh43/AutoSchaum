@@ -22,6 +22,7 @@ __author__ = 'Dany'
 
 from components import *
 import impedance
+import process_director
 
 class Node:
     """
@@ -67,15 +68,17 @@ class Circuit:
         self.netlist = self.netlist_file.read().split('\n')
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
+        self.nodelist = []
 
     def create_nodes(self):
         """
         parses self.netlist to create nodes
         :return:
         """
+        director = process_director.ProcessDirector()
         for comp in self.netlist:
-            comp.split(' ')
-
+            self.nodelist.append(director.construct(comp.split(' ')[0], Node))
+# TODO: Make sure this function works. Should be adding nodes dynamically
 
     def add_node(self, node_to_add):
         self.nodelist.append(node_to_add)
