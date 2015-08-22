@@ -29,8 +29,24 @@ class Node:
     """
 
     def __init__(self):
-        self.num_connected = 0 # number of devices connected to this node
-        self.y_connected = 0 # sum of admittances connected
+        """
+        :return:
+        """
+        self.name = node_num
+        self.num_connected = 0  # number of devices connected to this node
+        self.y_connected = 0  # sum of admittances connected
+
+    def add_comp(self, comp, to_nodes):
+        """
+        add a component that is connected to this node
+        :param comp: can be a source or an impedance
+        :param to_nodes: list of other nodes that the component is connected to
+        :return:
+        """
+        self.num_connected += 1
+        if type(comp) == impedance.Impedance:
+            self.y_connected += comp.y
+
 
 class Circuit:
 
@@ -51,6 +67,18 @@ class Circuit:
         self.netlist = self.netlist_file.read().split('\n')
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
+
+    def create_nodes(self):
+        """
+        parses self.netlist to create nodes
+        :return:
+        """
+        for comp in self.netlist:
+            comp.split(' ')
+
+
+    def add_node(self, node_to_add):
+        self.nodelist.append(node_to_add)
 
     def __calc_admittance_matrix(self):
         self.num_components = len(self.netlist)
