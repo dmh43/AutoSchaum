@@ -19,10 +19,11 @@ __author__ = 'Dany'
     Each circuit has a corresponding admittance matrix and current injection vector:
         I = YV; where I and V are vectors and Y is a matrix
 """
-
-from components import *
-import impedance
+# TODO do some concept validation before testing
+# TODO ok... do some testing before proceeding
+import components
 import process_director
+
 
 class Node:
     """
@@ -31,25 +32,56 @@ class Node:
 
     def __init__(self):
         """
+        self.voltage_list is defined as a list of other node voltages which are summed into sum_voltage
         :return:
         """
-        self.name = node_num
         self.num_connected = 0  # number of devices connected to this node
         self.y_connected = 0  # sum of admittances connected
+        self.voltage_list = [float('NaN')] # not a number until expression of voltages is defined
+        self.voltage = float('NaN')
+        self.supernode = False
 
-    def add_comp(self, comp, to_nodes):
+    def include_in_supernode(self, super_node):
+        """
+        :type super_node: Supernode
+        :param super_node:
+        :return:
+        """
+        self.supernode = super_node
+        return
+
+    def add_comp(self, parent_circuit, comp, to_nodes):
         """
         add a component that is connected to this node
+        :type parent_circuit: Circuit
         :param comp: can be a source or an impedance
         :param to_nodes: list of other nodes that the component is connected to
         :return:
         """
         self.num_connected += 1
         self.connected.append(comp)
-        if type(comp) == impedance.Impedance:
+        if type(comp) == components.Impedance:
             self.y_connected += comp.y
-        if type(comp) == impedance.Voltage_Source:
-            # how should i define the coltages between nodes?? self.
+        if type(comp) == components.Voltage_Source:
+            parent_circuit.supernode_list.append(self)
+            # how should i define the voltages between nodes?? self.
+
+
+class Supernode(Node):
+    """This class contains information about a group of nodes which form a supernode."""
+
+
+    def __init__(self, connected_nodes):
+        """
+
+        :type connected_nodes: type([Node])
+        :return:
+        """
+        self.nodes = connected_nodes # list of nodes that are a part of the supernode
+        self.num_connected = sum([i.num_connected for i in self.nodes])
+        self.y_connected = sum([i.y_connected for i in self.nodes])
+        self.voltage_list
+        # TODO ok... i need to figure out how im going to calculate the result. Do i need voltage_list in both nodes and super nodes?
 
 
 class Circuit:
@@ -72,6 +104,8 @@ class Circuit:
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
         self.nodelist = []
+        self.supernode_list = []
+        self.ym = [[]]
 
     def create_nodes(self):
         """
@@ -89,19 +123,19 @@ class Circuit:
     def add_node(self, node_to_add):
         self.nodelist.append(node_to_add)
 
-    def populate_nodes(selfs):
+    def populate_nodes(self):
         for node in self.nodelist:
             for comp in self.netlist:
                 data = comp.split(' ')
-                node.add_comp(data[0], (data[1], data[2]), data[3])
+                node.add_comp(self, data[0], (data[1], data[2]), data[3])
                 #is this correct???
 
     def __calc_admittance_matrix(self):
         self.num_components = len(self.netlist)
         for node in self.nodelist:
             for component in node.connected:
-                if type(component) == impedance.Impedance:
-                    ym[component.nodes[0]][component.nodes[1]] += component.y
-                    ym[component.nodes[1]][component.nodes[0]] += component.y
+                if type(component) == components.Impedance:
+                    self.ym[component.nodes[0]][component.nodes[1]] += component.y
+                    self.ym[component.nodes[1]][component.nodes[0]] += component.y
 
                     #TODO maybe i just need t create some unit tests...
