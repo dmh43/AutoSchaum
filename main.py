@@ -3,16 +3,19 @@ __hand_drawn = True
 if __hand_drawn:
     from matplotlib import pyplot as plt
     plt.xkcd()
-import SchemDraw as schem
-import SchemDraw.elements as e
+#import SchemDraw as schem
+#import SchemDraw.elements as e
+import circuit
 
-d = schem.Drawing(fontsize=10)
-V1 = d.add(e.SOURCE_V, label='$V_1$=10V')
-R1 = d.add(e.RES, d='right', label='$R_1$=100K$\Omega$')
-V2 = d.add(e.SOURCE_CONT_V, d='down', label='$V_2=V_1\cdot100$')
-R2 = d.add(e.RES, d='left', label='$R_2=50K\Omega$')
-l1 = d.add(e.LINE, to=V1.start)
-R3 = d.add(e.RES, to=R1.end, label='$R_3=20K\Omega$')
-d.add(e.GND, xy=l1.center)
-d.draw()
-d.save('testschematic.png', dpi = 300)
+# d = schem.Drawing(fontsize=10)
+# V1 = d.add(e.SOURCE_V, label='$V_1$=10V')
+# R1 = d.add(e.RES, d='right', label='$R_1$=100K$\Omega$')
+# V2 = d.add(e.SOURCE_CONT_V, d='down', label='$V_2=V_1\cdot100$')
+# R2 = d.add(e.RES, d='left', label='$R_2=50K\Omega$')
+# l1 = d.add(e.LINE, to=V1.start)
+# R3 = d.add(e.RES, to=R1.end, label='$R_3=20K\Omega$')
+# d.add(e.GND, xy=l1.center)
+# d.draw()
+# d.save('testschematic.png', dpi = 300)
+
+ohms = circuit.Circuit('text')

@@ -45,8 +45,11 @@ class Node:
         :return:
         """
         self.num_connected += 1
+        self.connected.append(comp)
         if type(comp) == impedance.Impedance:
             self.y_connected += comp.y
+        if type(comp) == impedance.Voltage_Source:
+            # how should i define the coltages between nodes?? self.
 
 
 class Circuit:
@@ -75,15 +78,30 @@ class Circuit:
         parses self.netlist to create nodes
         :return:
         """
-        director = process_director.ProcessDirector()
         for comp in self.netlist:
-            self.nodelist.append(director.construct(comp.split(' ')[0], Node))
+            if self.num_nodes < max(comp.split(' ')[1], comp.split(' ')[2]):
+                self.num_nodes = max(comp.split(' ')[1], comp.split(' ')[2]) #this can be done with list comprehension
+        director = process_director.ProcessDirector()
+        for comp in range(self.num_nodes):
+            self.nodelist.append(director.construct(comp, Node))
 # TODO: Make sure this function works. Should be adding nodes dynamically
 
     def add_node(self, node_to_add):
         self.nodelist.append(node_to_add)
 
+    def populate_nodes(selfs):
+        for node in self.nodelist:
+            for comp in self.netlist:
+                data = comp.split(' ')
+                node.add_comp(data[0], (data[1], data[2]), data[3])
+                #is this correct???
+
     def __calc_admittance_matrix(self):
         self.num_components = len(self.netlist)
-        for component in self.netlist:
+        for node in self.nodelist:
+            for component in node.connected:
+                if type(component) == impedance.Impedance:
+                    ym[component.nodes[0]][component.nodes[1]] += component.y
+                    ym[component.nodes[1]][component.nodes[0]] += component.y
 
+                    #TODO maybe i just need t create some unit tests...

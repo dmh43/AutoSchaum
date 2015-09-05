@@ -12,3 +12,9 @@ class Impedance:
         self.nodes = nodes
 
 
+class Voltage_Source:
+    def __init__(self, real, reactive, nodes):
+        self.v = complex(real, reactive)
+        self.nodes = nodes
+
+
