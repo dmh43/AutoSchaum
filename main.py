@@ -21,6 +21,7 @@ import circuit
 ohms = circuit.Circuit('text')
 ohms.create_nodes()
 ohms.populate_nodes()
+ohms.calc_admittance_matrix()
 print(ohms.nodelist)
 print(ohms.num_nodes)
 print(ohms.netlist)

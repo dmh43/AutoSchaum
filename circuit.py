@@ -54,7 +54,7 @@ class Node:
         self.num_comp_connected += 1
         self.connected_comps[name] = comp
         # TODO wait... resistors are an imepdance but with less data... how to implement in python??
-        if type(comp) == components.Impedance:
+        if isinstance(comp, components.Impedance):
             self.y_connected += comp.y
 
 
@@ -151,12 +151,12 @@ class Circuit:
                 node.add_comp(new_comp, data[0])
                 # is this correct???
 
-    def __calc_admittance_matrix(self):
-        self.num_components = len(self.netlist)
-        for node in self.nodelist:
-            for component in node.connected_comps:
-                if type(component) == components.Impedance:
-                    self.ym[component.nodes[0]][component.nodes[1]] += component.y
-                    self.ym[component.nodes[1]][component.nodes[0]] += component.y
-
+    def calc_admittance_matrix(self):
+        for node1 in self.nodelist.values():
+            for node2 in self.nodelist.values():
+                for comp in node2.connected_comps.values():
+                    if isinstance(comp, components.Impedance):
+                        self.ym[comp.nodes[0]][comp.nodes[1]] += comp.y
+                        self.ym[comp.nodes[1]][comp.nodes[0]] += comp.y
+# TODO Nodes need node numbers so that the above can work properly
                     # TODO maybe i just need t create some unit tests...

@@ -30,21 +30,21 @@ class Impedance(Component):
         self.nodes = nodes
 
 
-class Resistor(Component):
+class Resistor(Impedance):
     def __init__(self, real, nodes):
         self.z = complex(real,0)
         self.y = 1/self.z
         self.nodes = nodes
 
 
-class Capacitor(Component):
+class Capacitor(Impedance):
     def __init__(self, reactive, nodes):
         self.z = complex(0, reactive)
         self.y = 1/self.z
         self.nodes = nodes
 
 
-class Inductor(Component):
+class Inductor(Impedance):
     def __init__(self, reactive, nodes):
         self.z = complex(0, reactive)
         self.y = 1/self.z
