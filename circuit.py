@@ -151,12 +151,39 @@ class Circuit:
                 node.add_comp(new_comp, data[0])
                 # is this correct???
 
+    def connecting(self, node1, node2):
+        """
+        Gives all the components connected two nodes
+        :param node1: The first node
+        :type node1: Node
+        :param node2: The node connected to the second node via a component
+        :type node2: Node
+        :return: A list containing all the components connecting node1 and node2
+        """
+        comp_list = []
+        if node1 == node2:
+            return []
+        for comp in node1.connected_comps.values():
+            if comp.neg == node2:
+                comp_list.append(comp)
+            elif comp.pos == node2:
+                comp_list.append(comp)
+        return comp_list
+    # TODO This is wrong
+
     def calc_admittance_matrix(self):
         self.ym = [[0]*self.num_nodes]*self.num_nodes
         for node1 in self.nodelist.values():
             for node2 in self.nodelist.values():
                 if node1 == node2:
-                    for comp in node2.connected_comps.values():
+                    for comp in node1.connected_comps.values():
                         if isinstance(comp, components.Impedance):
-                            self.ym[comp.nodes[0].node_num][comp.nodes[1].node_num] += comp.y
-                            self.ym[comp.nodes[1].node_num][comp.nodes[0].node_num] += comp.y
+                            self.ym[node1.node_num][node1.node_num] += comp.y
+                        else:
+                            continue
+                else:
+                    for comp in self.connecting(node1, node2):
+                        if isinstance(comp, components.Impedance):
+                            self.ym[node1.node_num][node2.node_num] -= comp.y
+                            self.ym[node2.node_num][node1.node_num] -= comp.y
+
