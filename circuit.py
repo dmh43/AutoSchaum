@@ -24,6 +24,9 @@ __author__ = 'Dany'
 import components
 import process_director
 
+import math
+import cmath
+
 
 class Node:
     """
@@ -32,56 +35,61 @@ class Node:
 
     def __init__(self):
         """
-        self.voltage_list is defined as a list of other node voltages which are summed into sum_voltage
         :return:
         """
         self.num_connected = 0  # number of devices connected to this node
         self.y_connected = 0  # sum of admittances connected
-        self.voltage_list = [float('NaN')] # not a number until expression of voltages is defined
+        self.connected = []     # connected components
         self.voltage = float('NaN')
-        self.supernode = False
 
-    def include_in_supernode(self, super_node):
-        """
-        :type super_node: Supernode
-        :param super_node:
-        :return:
-        """
-        self.supernode = super_node
-        return
-
-    def add_comp(self, parent_circuit, comp, to_nodes):
+    def add_comp(self, comp):
         """
         add a component that is connected to this node
-        :type parent_circuit: Circuit
-        :param comp: can be a source or an impedance
-        :param to_nodes: list of other nodes that the component is connected to
+        :type comp: components.Component
+        :param comp: Component to add. Can be a source or an impedance
         :return:
         """
         self.num_connected += 1
         self.connected.append(comp)
         if type(comp) == components.Impedance:
             self.y_connected += comp.y
-        if type(comp) == components.Voltage_Source:
-            parent_circuit.supernode_list.append(self)
-            # how should i define the voltages between nodes?? self.
 
 
 class Supernode(Node):
-    """This class contains information about a group of nodes which form a supernode."""
-
+    """
+        This class contains information about a group of nodes which form a supernode. Nodes that make up a supernode
+        are interfaced only through the supernode class instance
+    """
 
     def __init__(self, connected_nodes):
         """
-
-        :type connected_nodes: type([Node])
-        :return:
-        """
-        self.nodes = connected_nodes # list of nodes that are a part of the supernode
+            :type connected_nodes: type([Node])
+            :param connected_nodes: List of nodes that are a part of the supernode. The first node in the list is the master
+            :return:
+            """
+        Node.__init__(self)
+        self.nodes = connected_nodes  # list of nodes that are a part of the supernode
         self.num_connected = sum([i.num_connected for i in self.nodes])
         self.y_connected = sum([i.y_connected for i in self.nodes])
-        self.voltage_list
-        # TODO ok... i need to figure out how im going to calculate the result. Do i need voltage_list in both nodes and super nodes?
+        self.master_node = self.nodes[0]  # the master node is the first node that inserted into the supernode
+
+    def evaluate_voltages(self):
+        """
+        This function will evaluate and assign voltage values to each node inside a supernode. the return type is a
+            success flag
+        :return: type(True)
+        """
+        if math.isnan(self.master_node.voltage): # this function should only run after the matrix equation has been
+                                                    # solved
+            return False
+        else:
+            for comp in self.master_node.connected:
+                if type(comp) == components.VoltageSource:
+                    if comp.pos == self.master_node:
+                        comp.neg.voltage = self.master_node.voltage - comp.v
+                    else:
+                        comp.pos.voltage = self.master_node.voltage + comp.v
+            return True
 
 
 class Circuit:
@@ -92,43 +100,53 @@ class Circuit:
         the input circuit is in the form of a SPICE netlist
         This implies that each impedance (admittance) is specified by a impedance and two nodes that connect it
         Additionally, each voltage or current source is defined by a constant or an expression of other values
+        :type netlist_filename: String
+        :param netlist_filename: The filename of the netlist
         A typical netlist looks like:
         CIRCUIT NAME
         V1 0 1 5
         R1 0 1 1
         R2 0 2 10
         R3 1 2 1
+        
         """
-        self.netlist_file = open('netlist_filename', 'r')
+        self.netlist_file = open(netlist_filename, 'r')
         self.netlist = self.netlist_file.read().split('\n')
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
-        self.nodelist = []
-        self.supernode_list = []
+        self.nodelist = {}
+        self.component_list = {}
+        self.supernode_list = {}
         self.ym = [[]]
+        self.num_nodes = 0
 
     def create_nodes(self):
         """
         parses self.netlist to create nodes
         :return:
         """
-        for comp in self.netlist:
-            if self.num_nodes < max(comp.split(' ')[1], comp.split(' ')[2]):
-                self.num_nodes = max(comp.split(' ')[1], comp.split(' ')[2]) #this can be done with list comprehension
-        director = process_director.ProcessDirector()
+        self.num_nodes = max([max(int(comp.split(' ')[1]), int(comp.split(' ')[2])) for comp in self.netlist]) + 1
+            # this compensates for zero indexing
         for comp in range(self.num_nodes):
-            self.nodelist.append(director.construct(comp, Node))
+            self.nodelist["Node %d" % (comp)] = Node()
 # TODO: Make sure this function works. Should be adding nodes dynamically
 
-    def add_node(self, node_to_add):
-        self.nodelist.append(node_to_add)
+    def create_supernodes(self):
+        """
+        Creates supernodes for the given circuit
+        :return:
+        """
+        return
 
     def populate_nodes(self):
-        for node in self.nodelist:
+        for node in self.nodelist.values():
             for comp in self.netlist:
                 data = comp.split(' ')
-                node.add_comp(self, data[0], (data[1], data[2]), data[3])
-                #is this correct???
+                new_comp = components.create_component(data[0], self.component_list, data[3],
+                                                       (self.nodelist["Node %s" % (data[1])],
+                                                        self.nodelist["Node %s" % (data[2])]))
+                node.add_comp(new_comp)
+                # is this correct???
 
     def __calc_admittance_matrix(self):
         self.num_components = len(self.netlist)
@@ -138,4 +156,4 @@ class Circuit:
                     self.ym[component.nodes[0]][component.nodes[1]] += component.y
                     self.ym[component.nodes[1]][component.nodes[0]] += component.y
 
-                    #TODO maybe i just need t create some unit tests...
+                    # TODO maybe i just need t create some unit tests...

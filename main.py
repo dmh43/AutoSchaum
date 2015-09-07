@@ -19,3 +19,8 @@ import circuit
 # d.save('testschematic.png', dpi = 300)
 
 ohms = circuit.Circuit('text')
+ohms.create_nodes()
+ohms.populate_nodes()
+print(ohms.nodelist)
+print(ohms.num_nodes)
+print(ohms.netlist)
