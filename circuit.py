@@ -37,20 +37,23 @@ class Node:
         """
         :return:
         """
-        self.num_connected = 0  # number of devices connected to this node
+        self.num_comp_connected = 0  # number of devices connected to this node
         self.y_connected = 0  # sum of admittances connected
-        self.connected = []     # connected components
+        self.connected_comps = {}    # connected components
         self.voltage = float('NaN')
 
-    def add_comp(self, comp):
+    def add_comp(self, comp, name):
         """
         add a component that is connected to this node
         :type comp: components.Component
         :param comp: Component to add. Can be a source or an impedance
+        :type name: string
+        :param name: Name of the component to add
         :return:
         """
-        self.num_connected += 1
-        self.connected.append(comp)
+        self.num_comp_connected += 1
+        self.connected_comps[name] = comp
+        # TODO wait... resistors are an imepdance but with less data... how to implement in python??
         if type(comp) == components.Impedance:
             self.y_connected += comp.y
 
@@ -69,7 +72,7 @@ class Supernode(Node):
             """
         Node.__init__(self)
         self.nodes = connected_nodes  # list of nodes that are a part of the supernode
-        self.num_connected = sum([i.num_connected for i in self.nodes])
+        self.num_comp_connected = sum([i.num_comp_connected for i in self.nodes])
         self.y_connected = sum([i.y_connected for i in self.nodes])
         self.master_node = self.nodes[0]  # the master node is the first node that inserted into the supernode
 
@@ -83,7 +86,7 @@ class Supernode(Node):
                                                     # solved
             return False
         else:
-            for comp in self.master_node.connected:
+            for comp in self.master_node.connected_comps:
                 if type(comp) == components.VoltageSource:
                     if comp.pos == self.master_node:
                         comp.neg.voltage = self.master_node.voltage - comp.v
@@ -145,13 +148,13 @@ class Circuit:
                 new_comp = components.create_component(data[0], self.component_list, data[3],
                                                        (self.nodelist["Node %s" % (data[1])],
                                                         self.nodelist["Node %s" % (data[2])]))
-                node.add_comp(new_comp)
+                node.add_comp(new_comp, data[0])
                 # is this correct???
 
     def __calc_admittance_matrix(self):
         self.num_components = len(self.netlist)
         for node in self.nodelist:
-            for component in node.connected:
+            for component in node.connected_comps:
                 if type(component) == components.Impedance:
                     self.ym[component.nodes[0]][component.nodes[1]] += component.y
                     self.ym[component.nodes[1]][component.nodes[0]] += component.y
