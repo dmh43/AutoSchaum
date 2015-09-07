@@ -19,19 +19,19 @@ __author__ = 'Dany'
     Each circuit has a corresponding admittance matrix and current injection vector:
         I = YV; where I and V are vectors and Y is a matrix
 """
-# TODO do some concept validation before testing
-# TODO ok... do some testing before proceeding
 import components
 import process_director
 
 import math
 import cmath
+import itertools
 
 
 class Node:
     """
     contains information about which devices are connected to which nodes and which nodes are supernodes and gnd
     """
+    _num_nodes = itertools.count(0)
 
     def __init__(self):
         """
@@ -41,6 +41,7 @@ class Node:
         self.y_connected = 0  # sum of admittances connected
         self.connected_comps = {}    # connected components
         self.voltage = float('NaN')
+        self.node_num = self._num_nodes.next()
 
     def add_comp(self, comp, name):
         """
@@ -53,7 +54,6 @@ class Node:
         """
         self.num_comp_connected += 1
         self.connected_comps[name] = comp
-        # TODO wait... resistors are an imepdance but with less data... how to implement in python??
         if isinstance(comp, components.Impedance):
             self.y_connected += comp.y
 
@@ -152,11 +152,11 @@ class Circuit:
                 # is this correct???
 
     def calc_admittance_matrix(self):
+        self.ym = [[0]*self.num_nodes]*self.num_nodes
         for node1 in self.nodelist.values():
             for node2 in self.nodelist.values():
-                for comp in node2.connected_comps.values():
-                    if isinstance(comp, components.Impedance):
-                        self.ym[comp.nodes[0]][comp.nodes[1]] += comp.y
-                        self.ym[comp.nodes[1]][comp.nodes[0]] += comp.y
-# TODO Nodes need node numbers so that the above can work properly
-                    # TODO maybe i just need t create some unit tests...
+                if node1 == node2:
+                    for comp in node2.connected_comps.values():
+                        if isinstance(comp, components.Impedance):
+                            self.ym[comp.nodes[0].node_num][comp.nodes[1].node_num] += comp.y
+                            self.ym[comp.nodes[1].node_num][comp.nodes[0].node_num] += comp.y
