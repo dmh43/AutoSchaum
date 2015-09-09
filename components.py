@@ -82,6 +82,7 @@ component_types = {'R':Resistor, 'C':Capacitor, 'L':Inductor, 'Z':Impedance, 'V'
 
 def create_component(name, comp_list, value, nodes):
     """
+    :rtype: Component
     :type name: string
     :param name: the name of the component from the netlist
     :param value: the value of (or expression for) the component being created

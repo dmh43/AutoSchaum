@@ -142,14 +142,13 @@ class Circuit:
         return
 
     def populate_nodes(self):
-        for node in self.nodelist.values():
-            for comp in self.netlist:
-                data = comp.split(' ')
-                new_comp = components.create_component(data[0], self.component_list, data[3],
-                                                       (self.nodelist["Node %s" % (data[1])],
-                                                        self.nodelist["Node %s" % (data[2])]))
-                node.add_comp(new_comp, data[0])
-                # is this correct???
+        for comp in self.netlist:
+            data = comp.split(' ')
+            new_comp = components.create_component(data[0], self.component_list, data[3],
+                                                   (self.nodelist["Node %s" % (data[1])],
+                                                    self.nodelist["Node %s" % (data[2])]))
+            new_comp.pos.add_comp(new_comp, data[0])
+            new_comp.neg.add_comp(new_comp, data[0])
 
     def connecting(self, node1, node2):
         """
@@ -169,10 +168,9 @@ class Circuit:
             elif comp.pos == node2:
                 comp_list.append(comp)
         return comp_list
-    # TODO This is wrong
 
     def calc_admittance_matrix(self):
-        self.ym = [[0]*self.num_nodes]*self.num_nodes
+        self.ym = [[complex(0, 0) for i in range(self.num_nodes)] for j in range(self.num_nodes)]
         for node1 in self.nodelist.values():
             for node2 in self.nodelist.values():
                 if node1 == node2:
@@ -185,5 +183,4 @@ class Circuit:
                     for comp in self.connecting(node1, node2):
                         if isinstance(comp, components.Impedance):
                             self.ym[node1.node_num][node2.node_num] -= comp.y
-                            self.ym[node2.node_num][node1.node_num] -= comp.y
 
