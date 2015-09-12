@@ -57,6 +57,12 @@ class Node:
         if isinstance(comp, components.Impedance):
             self.y_connected += comp.y
 
+# TODO identify branches
+# TODO each function should return a value and be well documeted
+# TODO determine I vector
+# TODO generate equations for node voltage analysis
+# TODO solve equations with sympy
+# TODO draw circuits
 
 class Supernode(Node):
     """
@@ -95,6 +101,22 @@ class Supernode(Node):
             return True
 
 
+class Branch:
+    """
+    Defines a branch connecting two nontrivial nodes
+    self.nodelist gives the list of nodes in the order which they are encountered going from start (nodelist[0])
+        to finish (nodelist[-1])
+    self.component_list gives the list of components which are encountered when traversing the branch from start to
+        finish. Either self.component_list[0].pos or self.component_list[0].neg is connected to nodelist[0] depending
+        on the the orientation of the component in the cirucit.
+    """
+    _num_branches = itertools.count(0)
+    def __init__(self):
+        self.nodelist = []
+        self.component_list = []
+        self.branch_num = self._num_branches.next()
+
+
 class Circuit:
 
 
@@ -118,8 +140,10 @@ class Circuit:
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
         self.nodelist = {}
+        self.nontrivial_nodelist = {}
         self.component_list = {}
         self.supernode_list = {}
+        self.branchlist = {}
         self.ym = [[]]
         self.num_nodes = 0
 
@@ -132,7 +156,6 @@ class Circuit:
             # this compensates for zero indexing
         for comp in range(self.num_nodes):
             self.nodelist["Node %d" % (comp)] = Node()
-# TODO: Make sure this function works. Should be adding nodes dynamically
 
     def create_supernodes(self):
         """
@@ -140,6 +163,13 @@ class Circuit:
         :return:
         """
         return
+
+    def define_reference_voltage(self):
+        """
+        The user should be allowed to select the reference node!
+        :return:
+        """
+        pass
 
     def populate_nodes(self):
         for comp in self.netlist:
@@ -168,6 +198,29 @@ class Circuit:
             elif comp.pos == node2:
                 comp_list.append(comp)
         return comp_list
+
+    def identify_nontrivial_nodes(self):
+        """
+        This function identifies the nontrivial nodes of a circuit. Specifically, this means all nodes that are
+        connected to more than two components.
+        :return:
+        """
+        for node in self.nodelist:
+            if self.nodelist[node].num_comp_connected > 2:
+                self.nontrivial_nodelist[node] = self.nodelist[node]
+
+    def create_branches(self):
+        if len(self.nontrivial_nodelist) == 0:
+            self.branchlist["Branch %d" % (0)] = Branch()
+            for node_num in range(self.num_nodes-1, -1, -1): # -1 and -1 are for bounds limiting for range()
+                self.branchlist["Branch 0"].component_list.append(self.nodelist["Node %d" % (node_num)]) # add sequentially
+                # TODO test this^
+        for node in self.nontrivial_nodelist.values(). #how can I exclude iterating over nodes that are connected to nodes that ive already iterated through?:
+            # TODO finish this!
+            while single_branch == True: # Go down each one until you reach the end of the branch. I think this will find all branches
+
+            # be sure to catch the case for no nontrivial nodes!
+
 
     def calc_admittance_matrix(self):
         self.ym = [[complex(0, 0) for i in range(self.num_nodes)] for j in range(self.num_nodes)]

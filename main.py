@@ -18,10 +18,18 @@ import circuit
 # d.draw()
 # d.save('testschematic.png', dpi = 300)
 
+"""
+ideas:
+renumer nodes so that it matches your solution
+define ground so that it matches your solution
+solve symbolically then evaluate
+"""
+
 ohms = circuit.Circuit('text')
 ohms.create_nodes()
 ohms.populate_nodes()
 ohms.calc_admittance_matrix()
+ohms.identify_nontrivial_nodes()
 print(ohms.nodelist)
 print(ohms.num_nodes)
 print(ohms.netlist)
