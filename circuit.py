@@ -143,7 +143,7 @@ class Circuit:
         self.nontrivial_nodelist = {}
         self.component_list = {}
         self.supernode_list = {}
-        self.branchlist = {}
+        self.branchlist = []
         self.ym = [[]]
         self.num_nodes = 0
 
@@ -209,26 +209,40 @@ class Circuit:
             if self.nodelist[node].num_comp_connected > 2:
                 self.nontrivial_nodelist[node] = self.nodelist[node]
 
+# TODO change dictionaries to list if possible
     def create_branches(self):
         if len(self.nontrivial_nodelist) == 0:
-            self.branchlist["Branch %d" % (0)] = Branch()
+            self.branchlist.append(Branch())
             for node_num in range(self.num_nodes-1, -1, -1): # -1 and -1 are for bounds limiting for range()
-                self.branchlist["Branch 0"].component_list.append(self.nodelist["Node %d" % (node_num)]) # add sequentially
+                self.branchlist[0].component_list.append(self.nodelist["Node %d" % (node_num)]) # add sequentially
                 return self.branchlist
                 # TODO test this^
         for node in self.nontrivial_nodelist.values():
             # TODO finish this!
             current_branch = Branch()
             current_branch.nodelist.append(node) # The start node
-            single_branch = True
-            while single_branch == True: # Go down each one until you reach the end of the branch. I think this will find all branches
-                #finish
-                if current_branch.nodelist[0] in [x.nodelist[-1]  for x in self.branchlist] or \
-                    current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
-                        return [] # if the branch has already been added, but in reverse then return an empty string
+            for direction in [x.pos if (x.neg == node) else x.neg for x in node.connected_comps.values()]:
+                if direction.num_comp_connected > 2:
+                    for comp in self.connecting(node, direction):
+                        current_branch = Branch()
+                        current_branch.nodelist.extend([node, direction])
+                        current_branch.component_list.append(comp)
+                        self.branchlist.append(current_branch)
+                        return self.branchlist
+                while True: # Go down each one until you reach the end of the branch. I think this will find all branches
+                    if current_branch.nodelist[-1].num_comp_connected > 2:
+                        return current_branch
+                    current_branch.nodelist.append(current_branch.component_list[-1].pos if current_branch.nodelist[-1].neg == \
+                        current_branch.nodelist[-1] else current_branch.component_list[-1].neg)
+                    # jump to the other node of the component connected to this node and add it to the list
+                    current_branch.component_list.extend(self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
+                    # add the component connecting the new node and the last node
+                    if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
+                        current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
+                            return [] # if the branch has already been added, but in reverse then return an empty string
                                     # and dont add a new branch to the branchlist
-
-            # be sure to catch the case for no nontrivial nodes!
+                                    # This will work because it checks to see if the array is flipped. ie it only checks for
+                                        #finding the same branch but in the opposite direction
 
 
     def calc_admittance_matrix(self):
