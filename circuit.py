@@ -214,10 +214,19 @@ class Circuit:
             self.branchlist["Branch %d" % (0)] = Branch()
             for node_num in range(self.num_nodes-1, -1, -1): # -1 and -1 are for bounds limiting for range()
                 self.branchlist["Branch 0"].component_list.append(self.nodelist["Node %d" % (node_num)]) # add sequentially
+                return self.branchlist
                 # TODO test this^
-        for node in self.nontrivial_nodelist.values(). #how can I exclude iterating over nodes that are connected to nodes that ive already iterated through?:
+        for node in self.nontrivial_nodelist.values():
             # TODO finish this!
+            current_branch = Branch()
+            current_branch.nodelist.append(node) # The start node
+            single_branch = True
             while single_branch == True: # Go down each one until you reach the end of the branch. I think this will find all branches
+                #finish
+                if current_branch.nodelist[0] in [x.nodelist[-1]  for x in self.branchlist] or \
+                    current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
+                        return [] # if the branch has already been added, but in reverse then return an empty string
+                                    # and dont add a new branch to the branchlist
 
             # be sure to catch the case for no nontrivial nodes!
 
