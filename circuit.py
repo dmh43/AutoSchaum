@@ -20,7 +20,6 @@ __author__ = 'Dany'
         I = YV; where I and V are vectors and Y is a matrix
 """
 import components
-import process_director
 
 import math
 import cmath
@@ -35,7 +34,8 @@ class Node:
 
     def __init__(self):
         """
-        :return:
+        instantiates a node object. An empty node is created and then components are connected using class methods
+        :return: Init functions do not return a value
         """
         self.num_comp_connected = 0  # number of devices connected to this node
         self.y_connected = 0  # sum of admittances connected
@@ -50,12 +50,14 @@ class Node:
         :param comp: Component to add. Can be a source or an impedance
         :type name: string
         :param name: Name of the component to add
-        :return:
+        :return: returns the node
+        :rtype Node:
         """
         self.num_comp_connected += 1
         self.connected_comps[name] = comp
         if isinstance(comp, components.Impedance):
             self.y_connected += comp.y
+        return self
 
 # TODO identify branches
 # TODO each function should return a value and be well documeted
@@ -209,7 +211,6 @@ class Circuit:
             if self.nodelist[node].num_comp_connected > 2:
                 self.nontrivial_nodelist[node] = self.nodelist[node]
 
-# TODO change dictionaries to list if possible
     def create_branches(self):
         if len(self.nontrivial_nodelist) == 0:
             self.branchlist.append(Branch())
@@ -219,21 +220,26 @@ class Circuit:
                 # TODO test this^
         for node in self.nontrivial_nodelist.values():
             # TODO finish this!
-            current_branch = Branch()
-            current_branch.nodelist.append(node) # The start node
-            for direction in [x.pos if (x.neg == node) else x.neg for x in node.connected_comps.values()]:
+            for direction in list(set([x.pos if (x.neg == node) else x.neg for x in node.connected_comps.values()])):
                 if direction.num_comp_connected > 2:
+                    # This only happens when two nodes are connected by a single component. therefore each component
+                    # is a part of its own branch.
                     for comp in self.connecting(node, direction):
                         current_branch = Branch()
                         current_branch.nodelist.extend([node, direction])
                         current_branch.component_list.append(comp)
                         self.branchlist.append(current_branch)
-                        return self.branchlist
+                    continue # this direction has been exhausted, so go to the next direction
+                current_branch = Branch()
+                current_branch.nodelist.append(node) # The start node
+                current_branch.nodelist.append(direction) # The direction to go down
+                current_branch.component_list.extend(self.connecting(node, direction))
                 while True: # Go down each one until you reach the end of the branch. I think this will find all branches
                     if current_branch.nodelist[-1].num_comp_connected > 2:
                         return current_branch
                     current_branch.nodelist.append(current_branch.component_list[-1].pos if current_branch.nodelist[-1].neg == \
                         current_branch.nodelist[-1] else current_branch.component_list[-1].neg)
+                    # TODO What is going on here?^^^ I think im almost there
                     # jump to the other node of the component connected to this node and add it to the list
                     current_branch.component_list.extend(self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
                     # add the component connecting the new node and the last node
