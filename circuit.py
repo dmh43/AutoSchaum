@@ -29,6 +29,11 @@ import itertools
 class Node:
     """
     contains information about which devices are connected to which nodes and which nodes are supernodes and gnd
+    :type num_comp_connected: int
+    :type y_connected: int
+    :type connected_comps: dict
+    :type voltage: float
+    :type node_num: int
     """
     _num_nodes = itertools.count(0)
 
@@ -111,6 +116,9 @@ class Branch:
     self.component_list gives the list of components which are encountered when traversing the branch from start to
         finish. Either self.component_list[0].pos or self.component_list[0].neg is connected to nodelist[0] depending
         on the the orientation of the component in the cirucit.
+    :type nodelist: list[Node]
+    :type component_list: list[components.Component]
+    :type branch_num: int
     """
     _num_branches = itertools.count(0)
     def __init__(self):
@@ -135,6 +143,16 @@ class Circuit:
         R1 0 1 1
         R2 0 2 10
         R3 1 2 1
+        :type netlist_file: file
+        :type netlist: str
+        :type name: str
+        :type nodelist: dict[str, Node]
+        :type nontrivial_nodelist: dict[str, Node]
+        :type component_list: dict[str, components.Component]
+        :type supernode_list: dict[str, Supernode]
+        :type branchlist: list[Branch]
+        :type ym: list[list[int]]
+        :type num_nodes: int
         
         """
         self.netlist_file = open(netlist_filename, 'r')
@@ -176,9 +194,11 @@ class Circuit:
     def populate_nodes(self):
         for comp in self.netlist:
             data = comp.split(' ')
+            assert isinstance(str, data)
             new_comp = components.create_component(data[0], self.component_list, data[3],
                                                    (self.nodelist["Node %s" % (data[1])],
                                                     self.nodelist["Node %s" % (data[2])]))
+            assert isinstance(components.Component, new_comp)
             new_comp.pos.add_comp(new_comp, data[0])
             new_comp.neg.add_comp(new_comp, data[0])
 
@@ -190,8 +210,10 @@ class Circuit:
         :param node2: The node connected to the second node via a component
         :type node2: Node
         :return: A list containing all the components connecting node1 and node2
+        :rtype list[components.Component:
         """
         comp_list = []
+        assert isinstance(list[components.Component], comp_list)
         if node1 == node2:
             return []
         for comp in node1.connected_comps.values():

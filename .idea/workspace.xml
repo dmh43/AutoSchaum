@@ -2,9 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8915e08e-34a6-4e4c-a748-c0fcc9d10660" name="Default" comment="">
-      <change type="DELETED" beforePath="C:\Users\Dany\Documents\GitHub\Python\AutoSchaum\process_director.py" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit.py" afterPath="$PROJECT_DIR$/circuit.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="AutoSchaum.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -48,8 +46,8 @@
       <file leaf-file-name="circuit.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/circuit.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.37080538">
-              <caret line="241" column="75" selection-start-line="241" selection-start-column="75" selection-end-line="241" selection-end-column="75" />
+            <state vertical-scroll-proportion="0.4362416">
+              <caret line="275" column="36" selection-start-line="275" selection-start-column="36" selection-end-line="275" selection-end-column="36" />
               <folding>
                 <element signature="e#798#815#0" expanded="true" />
               </folding>
@@ -173,7 +171,7 @@
     <property name="options.lastSelected" value="reference.settingsdialog.IDE.editor.colors.General" />
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="options.splitter.details.proportions" value="0.2" />
-    <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors.General" />
+    <property name="settings.editor.selected.configurable" value="editing.templates" />
     <property name="settings.editor.splitter.proportion" value="0.2" />
   </component>
   <component name="RunManager" selected="Python.main">
@@ -379,7 +377,7 @@
     <frame x="-8" y="-8" width="1382" height="754" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.18601191" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32692307" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -426,7 +424,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="python-line">
           <url>file://$PROJECT_DIR$/circuit.py</url>
-          <line>236</line>
+          <line>258</line>
           <option name="timeStamp" value="38" />
         </line-breakpoint>
       </breakpoints>
@@ -638,8 +636,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.37080538">
-          <caret line="241" column="75" selection-start-line="241" selection-start-column="75" selection-end-line="241" selection-end-column="75" />
+        <state vertical-scroll-proportion="0.4362416">
+          <caret line="275" column="36" selection-start-line="275" selection-start-column="36" selection-end-line="275" selection-end-column="36" />
           <folding>
             <element signature="e#798#815#0" expanded="true" />
           </folding>
