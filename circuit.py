@@ -44,7 +44,7 @@ class Node:
         """
         self.num_comp_connected = 0  # number of devices connected to this node
         self.y_connected = 0  # sum of admittances connected
-        self.connected_comps = {}    # connected components
+        self.connected_comps = {}  # connected components
         self.voltage = float('NaN')
         self.node_num = self._num_nodes.next()
 
@@ -64,12 +64,12 @@ class Node:
             self.y_connected += comp.y
         return self
 
-# TODO identify branches
-# TODO each function should return a value and be well documeted
-# TODO determine I vector
+
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
+# TODO each function should return a value and be well documeted
 # TODO draw circuits
+# TODO determine I vector
 
 class Supernode(Node):
     """
@@ -95,8 +95,8 @@ class Supernode(Node):
             success flag
         :return: type(True)
         """
-        if math.isnan(self.master_node.voltage): # this function should only run after the matrix equation has been
-                                                    # solved
+        if math.isnan(self.master_node.voltage):  # this function should only run after the matrix equation has been
+            # solved
             return False
         else:
             for comp in self.master_node.connected_comps:
@@ -121,6 +121,7 @@ class Branch:
     :type branch_num: int
     """
     _num_branches = itertools.count(0)
+
     def __init__(self):
         self.nodelist = []
         self.component_list = []
@@ -128,8 +129,6 @@ class Branch:
 
 
 class Circuit:
-
-
     def __init__(self, netlist_filename):
         """
         the input circuit is in the form of a SPICE netlist
@@ -173,7 +172,7 @@ class Circuit:
         :return:
         """
         self.num_nodes = max([max(int(comp.split(' ')[1]), int(comp.split(' ')[2])) for comp in self.netlist]) + 1
-            # this compensates for zero indexing
+        # this compensates for zero indexing
         for comp in range(self.num_nodes):
             self.nodelist["Node %d" % (comp)] = Node()
 
@@ -194,11 +193,11 @@ class Circuit:
     def populate_nodes(self):
         for comp in self.netlist:
             data = comp.split(' ')
-            assert isinstance(str, data)
+            """:type : list[str]"""
             new_comp = components.create_component(data[0], self.component_list, data[3],
                                                    (self.nodelist["Node %s" % (data[1])],
                                                     self.nodelist["Node %s" % (data[2])]))
-            assert isinstance(components.Component, new_comp)
+            """:type : components.Component"""
             new_comp.pos.add_comp(new_comp, data[0])
             new_comp.neg.add_comp(new_comp, data[0])
 
@@ -213,7 +212,7 @@ class Circuit:
         :rtype list[components.Component:
         """
         comp_list = []
-        assert isinstance(list[components.Component], comp_list)
+        """:type : list[components.Component]"""
         if node1 == node2:
             return []
         for comp in node1.connected_comps.values():
@@ -236,12 +235,10 @@ class Circuit:
     def create_branches(self):
         if len(self.nontrivial_nodelist) == 0:
             self.branchlist.append(Branch())
-            for node_num in range(self.num_nodes-1, -1, -1): # -1 and -1 are for bounds limiting for range()
-                self.branchlist[0].component_list.append(self.nodelist["Node %d" % (node_num)]) # add sequentially
+            for node_num in range(self.num_nodes - 1, -1, -1):  # -1 and -1 are for bounds limiting for range()
+                self.branchlist[0].component_list.append(self.nodelist["Node %d" % (node_num)])  # add sequentially
                 return self.branchlist
-                # TODO test this^
         for node in self.nontrivial_nodelist.values():
-            # TODO finish this!
             for direction in list(set([x.pos if (x.neg == node) else x.neg for x in node.connected_comps.values()])):
                 if direction.num_comp_connected > 2:
                     # This only happens when two nodes are connected by a single component. therefore each component
@@ -250,27 +247,46 @@ class Circuit:
                         current_branch = Branch()
                         current_branch.nodelist.extend([node, direction])
                         current_branch.component_list.append(comp)
-                        self.branchlist.append(current_branch)
-                    continue # this direction has been exhausted, so go to the next direction
+                        if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
+                                        current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
+                            break
+                        else:
+                            self.branchlist.append(current_branch)
+                    continue  # this direction has been exhausted, so go to the next direction
                 current_branch = Branch()
-                current_branch.nodelist.append(node) # The start node
-                current_branch.nodelist.append(direction) # The direction to go down
+                current_branch.nodelist.append(node)  # The start node
+                current_branch.nodelist.append(direction)  # The direction to go down
                 current_branch.component_list.extend(self.connecting(node, direction))
-                while True: # Go down each one until you reach the end of the branch. I think this will find all branches
+                while True:  # Go down each one until you reach the end of the branch. I think this will find all branches
                     if current_branch.nodelist[-1].num_comp_connected > 2:
-                        return current_branch
-                    current_branch.nodelist.append(current_branch.component_list[-1].pos if current_branch.nodelist[-1].neg == \
-                        current_branch.nodelist[-1] else current_branch.component_list[-1].neg)
-                    # TODO What is going on here?^^^ I think im almost there
+                        # reached end of branch
+                        self.branchlist.append(current_branch)
+                        break
+                    next_comp = set(current_branch.nodelist[-1].connected_comps.values()) - set(current_branch.component_list)
+                    next_comp = next_comp.pop()
+                    """:type : components.Component"""
+                    next_node = next_comp.pos if next_comp.neg == current_branch.nodelist[-1] else next_comp.neg
+                    """:type : Node"""
+                    if next_node in current_branch.nodelist:
+                        # looped around a branch somehow... look into this...
+                        self.branchlist.append(current_branch)
+                        break
+                    current_branch.nodelist.append(next_node)
                     # jump to the other node of the component connected to this node and add it to the list
-                    current_branch.component_list.extend(self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
+                    current_branch.component_list.extend(
+                        self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
                     # add the component connecting the new node and the last node
                     if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
-                        current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
-                            return [] # if the branch has already been added, but in reverse then return an empty string
-                                    # and dont add a new branch to the branchlist
-                                    # This will work because it checks to see if the array is flipped. ie it only checks for
-                                        #finding the same branch but in the opposite direction
+                                    current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
+                        break  # if the branch has already been added, but in reverse then break
+                        # and dont add a new branch to the branchlist
+                        # This will work because it checks to see if the array is flipped. ie it only checks for
+                        # finding the same branch but in the opposite direction
+                    else:
+                        self.branchlist.append(current_branch)
+                        break
+
+    def gen_node_voltage_eq(self):
 
 
     def calc_admittance_matrix(self):
@@ -287,4 +303,3 @@ class Circuit:
                     for comp in self.connecting(node1, node2):
                         if isinstance(comp, components.Impedance):
                             self.ym[node1.node_num][node2.node_num] -= comp.y
-
