@@ -1,22 +1,30 @@
 __author__ = 'Dany'
 import math
+import circuit
 
 
 class Component:
+    """
+    :type nodes: list[circuit.Node]
+    :type name: str
+    """
     def __init__(self, nodes):
         self.nodes = nodes
+        self.refdes = ""
 
     @property
     def neg(self):
         """
-        :return: Node
+        :rtype: circuit.Node
+        :return:
         """
         return self.nodes[1]
 
     @property
     def pos(self):
         """
-        :return: Node
+        :rtype: circuit.Node
+        :return:
         """
         return self.nodes[0]
 
@@ -28,6 +36,7 @@ class Impedance(Component):
         self.z = complex(real, reactive)
         self.y = 1/self.z
         self.nodes = nodes
+        self.refdes = "Z"
 
 
 class Resistor(Impedance):
@@ -35,6 +44,7 @@ class Resistor(Impedance):
         self.z = complex(real,0)
         self.y = 1/self.z
         self.nodes = nodes
+        self.refdes = "R"
 
 
 class Capacitor(Impedance):
@@ -42,6 +52,7 @@ class Capacitor(Impedance):
         self.z = complex(0, reactive)
         self.y = 1/self.z
         self.nodes = nodes
+        self.refdes = "C"
 
 
 class Inductor(Impedance):
@@ -49,6 +60,7 @@ class Inductor(Impedance):
         self.z = complex(0, reactive)
         self.y = 1/self.z
         self.nodes = nodes
+        self.refdes = "L"
 
 
 class CurrentSource(Component):
@@ -88,12 +100,13 @@ def create_component(name, comp_list, value, nodes):
     :param value: the value of (or expression for) the component being created
     :type comp_list: dict
     :param comp_list: the dictionary that keeps track of the list of components
-    :type nodes: type([Node])
+    :type nodes: type([circuit.Node])
     :param nodes: the list of nodes that the device connects to (pos, neg)
     :return: returns a refrence to the component that has been created
     """
     if name[0] == 'R':
         comp_list[name] = Resistor(float(value), nodes)
+        comp_list[name].refdes = name
     elif name[0] == 'C':
         pass
     elif name[0] == 'L':

@@ -24,6 +24,7 @@ import components
 import math
 import cmath
 import itertools
+import sympy
 
 
 class Node:
@@ -65,16 +66,17 @@ class Node:
         return self
 
 
+# TODO identify supernodes
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
-# TODO each function should return a value and be well documeted
 # TODO draw circuits
 # TODO determine I vector
 
 class Supernode(Node):
     """
         This class contains information about a group of nodes which form a supernode. Nodes that make up a supernode
-        are interfaced only through the supernode class instance
+        are interfaced only through the supernode class instance. The voltage and node number of the supernode are
+        identical to those of the master node.
     """
 
     def __init__(self, connected_nodes):
@@ -82,7 +84,7 @@ class Supernode(Node):
             :type connected_nodes: type([Node])
             :param connected_nodes: List of nodes that are a part of the supernode. The first node in the list is the master
             :return:
-            """
+        """
         Node.__init__(self)
         self.nodes = connected_nodes  # list of nodes that are a part of the supernode
         self.num_comp_connected = sum([i.num_comp_connected for i in self.nodes])
@@ -142,29 +144,33 @@ class Circuit:
         R1 0 1 1
         R2 0 2 10
         R3 1 2 1
-        :type netlist_file: file
-        :type netlist: str
-        :type name: str
-        :type nodelist: dict[str, Node]
-        :type nontrivial_nodelist: dict[str, Node]
-        :type component_list: dict[str, components.Component]
-        :type supernode_list: dict[str, Supernode]
-        :type branchlist: list[Branch]
-        :type ym: list[list[int]]
-        :type num_nodes: int
+        :type self.netlist_file: file
+        :type self.netlist: str
+        :type self.name: str
+        :type self.nodelist: dict[str, Node]
+        :type self.nontrivial_nodelist: dict[str, Node]
+        :type self.component_list: dict[str, components.Component]
+        :type self.supernode_list: dict[str, Supernode]
+        :type self.branchlist: list[Branch]
+        :type self.ym: list[list[int]]
+        :type self.num_nodes: int
+        :type self.equations: list[str]
+        :type self.ref: Node
         
         """
         self.netlist_file = open(netlist_filename, 'r')
         self.netlist = self.netlist_file.read().split('\n')
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
-        self.nodelist = {}
-        self.nontrivial_nodelist = {}
-        self.component_list = {}
-        self.supernode_list = {}
-        self.branchlist = []
+        self.nodelist = {str():Node()}
+        self.nontrivial_nodelist = {str():Node()}
+        self.component_list = {str():Node}
+        self.supernode_list = {str():Node}
+        self.branchlist = [Branch()]
         self.ym = [[]]
         self.num_nodes = 0
+        self.equations = [str()]
+        self.ref = Node()
 
     def create_nodes(self):
         """
@@ -181,14 +187,33 @@ class Circuit:
         Creates supernodes for the given circuit
         :return:
         """
+        for v_source in [x for x in self.component_list if isinstance(x, components.VoltageSource)]:
+            assert isinstance(v_source, components.VoltageSource)
+            # checks to see which voltage sources are in branches containing only voltage sources
+            sn_branch = filter(lambda branch: v_source in branch.component_list, self.branchlist)
+            if len(sn_branch) != 1:
+                print("component %s in multiple branches!" % v_source.refdes)
+                exit()
+            sn_branch = sn_branch[0]
+            # this isnt right sunce you can have many voltage sources connecting each other in different branches
+            if not filter(lambda comp: type(comp) != components.VoltageSource, sn_branch.component_list):
+                sn_name = "Supernode {0}".format(v_source.pos.node_num)
+                connected_nodes = sn_branch.nodelist
+                self.supernode_list[sn_name] = Supernode(connected_nodes)
+                self.supernode_list[sn_name].
+
+                # if the list of all non-voltage sources in branch is empty this means we need to create a supernode
+                # ok idk what to do here
+            # TODO finish
         return
 
     def define_reference_voltage(self):
         """
         The user should be allowed to select the reference node!
+        This function defines the reference voltage to be the node with the most components connected
         :return:
         """
-        pass
+        self.ref = sorted(self.nodelist, key = lambda node: node.num_comp_connected)[-1]
 
     def populate_nodes(self):
         for comp in self.netlist:
@@ -287,7 +312,17 @@ class Circuit:
                         break
 
     def gen_node_voltage_eq(self):
-
+        """
+        :rtype: list[str]
+        :return: list of strings to be sympified into sympy expressions
+        """
+        # TODO finish this!
+        for branch in self.branchlist:
+            current_eq = "V{0} ".format(branch.nodelist[0])
+            """:type : str"""
+            for comp in branch.component_list:
+                if isinstance(comp, components.VoltageSource):
+                    pass
 
     def calc_admittance_matrix(self):
         self.ym = [[complex(0, 0) for i in range(self.num_nodes)] for j in range(self.num_nodes)]
