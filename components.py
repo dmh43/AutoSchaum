@@ -8,9 +8,10 @@ class Component:
     :type nodes: list[circuit.Node]
     :type name: str
     """
-    def __init__(self, nodes):
+    def __init__(self, nodes, name):
         self.nodes = nodes
-        self.refdes = ""
+        self.refdes = name
+        self.branch = None
 
     @property
     def neg(self):
@@ -29,38 +30,42 @@ class Component:
         return self.nodes[0]
 
 class Impedance(Component):
-    def __init__(self, real, reactive, nodes):
+    def __init__(self, real, reactive, nodes, name):
         """
         nodes should be in the form (pos_node, neg_node)
         """
         self.z = complex(real, reactive)
         self.y = 1/self.z
         self.nodes = nodes
-        self.refdes = "Z"
+        self.refdes = name
+        self.branch = None
 
 
 class Resistor(Impedance):
-    def __init__(self, real, nodes):
+    def __init__(self, real, nodes, name):
         self.z = complex(real,0)
         self.y = 1/self.z
         self.nodes = nodes
-        self.refdes = "R"
+        self.refdes = name
+        self.branch = None
 
 
 class Capacitor(Impedance):
-    def __init__(self, reactive, nodes):
+    def __init__(self, reactive, nodes, name):
         self.z = complex(0, reactive)
         self.y = 1/self.z
         self.nodes = nodes
-        self.refdes = "C"
+        self.refdes = name
+        self.branch = None
 
 
 class Inductor(Impedance):
-    def __init__(self, reactive, nodes):
+    def __init__(self, reactive, nodes, name):
         self.z = complex(0, reactive)
         self.y = 1/self.z
         self.nodes = nodes
-        self.refdes = "L"
+        self.refdes = name
+        self.branch = None
 
 
 class CurrentSource(Component):
@@ -84,9 +89,11 @@ class ICIS(Component):
 
 
 class VoltageSource(Component):
-    def __init__(self, real, reactive, nodes):
+    def __init__(self, real, reactive, nodes, name):
         self.v = complex(real, reactive)
         self.nodes = nodes
+        self.refdes = name
+        self.branch = None
 
 
 component_types = {'R':Resistor, 'C':Capacitor, 'L':Inductor, 'Z':Impedance, 'V':VoltageSource, 'I':CurrentSource,
@@ -98,23 +105,22 @@ def create_component(name, comp_list, value, nodes):
     :type name: string
     :param name: the name of the component from the netlist
     :param value: the value of (or expression for) the component being created
-    :type comp_list: dict
+    :type comp_list: list[Component]
     :param comp_list: the dictionary that keeps track of the list of components
     :type nodes: type([circuit.Node])
     :param nodes: the list of nodes that the device connects to (pos, neg)
     :return: returns a refrence to the component that has been created
     """
     if name[0] == 'R':
-        comp_list[name] = Resistor(float(value), nodes)
-        comp_list[name].refdes = name
+        comp_list.append(Resistor(float(value), nodes, name))
     elif name[0] == 'C':
         pass
     elif name[0] == 'L':
         pass
     elif name[0] == 'Z':
-        comp_list[name] = Impedance(complex(value).real, complex(value).imag, nodes)
+        comp_list.append(Impedance(complex(value).real, complex(value).imag, nodes, name))
     elif name[0] == 'V':
-        comp_list[name] = VoltageSource(complex(value).real, complex(value).imag, nodes)
+        comp_list.append(VoltageSource(complex(value).real, complex(value).imag, nodes, name))
     elif name[0] == 'I':
         pass
     elif name[0:4] == "VCVS":
@@ -125,4 +131,4 @@ def create_component(name, comp_list, value, nodes):
         pass
     elif name[0:4] == "ICIS":
         pass
-    return comp_list[name]
+    return comp_list[-1]

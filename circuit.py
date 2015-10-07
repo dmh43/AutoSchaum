@@ -32,7 +32,7 @@ class Node:
     contains information about which devices are connected to which nodes and which nodes are supernodes and gnd
     :type num_comp_connected: int
     :type y_connected: int
-    :type connected_comps: dict
+    :type connected_comps: list[components.Component]
     :type voltage: float
     :type node_num: int
     """
@@ -45,7 +45,7 @@ class Node:
         """
         self.num_comp_connected = 0  # number of devices connected to this node
         self.y_connected = 0  # sum of admittances connected
-        self.connected_comps = {}  # connected components
+        self.connected_comps = []  # connected components
         self.voltage = float('NaN')
         self.node_num = self._num_nodes.next()
 
@@ -147,10 +147,10 @@ class Circuit:
         :type self.netlist_file: file
         :type self.netlist: str
         :type self.name: str
-        :type self.nodelist: dict[str, Node]
-        :type self.nontrivial_nodelist: dict[str, Node]
-        :type self.component_list: dict[str, components.Component]
-        :type self.supernode_list: dict[str, Supernode]
+        :type self.nodelist: list[Node]
+        :type self.nontrivial_nodelist: list[Node]
+        :type self.component_list: list[components.Component]
+        :type self.supernode_list: list[Supernode]
         :type self.branchlist: list[Branch]
         :type self.ym: list[list[int]]
         :type self.num_nodes: int
@@ -163,9 +163,9 @@ class Circuit:
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
         self.nodelist = {str():Node()}
-        self.nontrivial_nodelist = {str():Node()}
-        self.component_list = {str():Node}
-        self.supernode_list = {str():Node}
+        self.nontrivial_nodelist = [Node()]
+        self.component_list = [Node()]
+        self.supernode_list = [Node()]
         self.branchlist = [Branch()]
         self.ym = [[]]
         self.num_nodes = 0
@@ -179,14 +179,21 @@ class Circuit:
         """
         self.num_nodes = max([max(int(comp.split(' ')[1]), int(comp.split(' ')[2])) for comp in self.netlist]) + 1
         # this compensates for zero indexing
-        for comp in range(self.num_nodes):
-            self.nodelist["Node %d" % (comp)] = Node()
+        for i in range(self.num_nodes):
+            self.nodelist[i] = Node()
 
     def create_supernodes(self):
         """
         Creates supernodes for the given circuit
         :return:
         """
+        v_source_branches = [branch for branch in self.branchlist if any(isinstance(branch.component_list[i],
+                                                                                    components.VoltageSource) for i in
+                                                                         range(len(branch.component_list)))]
+        for node in self.nodelist:
+            if any([node in v_source_branches[i].nodelist for i in range(len(v_source_branches))]):
+
+
         for v_source in [x for x in self.component_list if isinstance(x, components.VoltageSource)]:
             assert isinstance(v_source, components.VoltageSource)
             # checks to see which voltage sources are in branches containing only voltage sources
@@ -220,8 +227,8 @@ class Circuit:
             data = comp.split(' ')
             """:type : list[str]"""
             new_comp = components.create_component(data[0], self.component_list, data[3],
-                                                   (self.nodelist["Node %s" % (data[1])],
-                                                    self.nodelist["Node %s" % (data[2])]))
+                                                   (self.nodelist[int(data[1])],
+                                                    self.nodelist[int(data[2])]))
             """:type : components.Component"""
             new_comp.pos.add_comp(new_comp, data[0])
             new_comp.neg.add_comp(new_comp, data[0])
@@ -240,7 +247,7 @@ class Circuit:
         """:type : list[components.Component]"""
         if node1 == node2:
             return []
-        for comp in node1.connected_comps.values():
+        for comp in node1.connected_comps:
             if comp.neg == node2:
                 comp_list.append(comp)
             elif comp.pos == node2:
@@ -254,17 +261,19 @@ class Circuit:
         :return:
         """
         for node in self.nodelist:
-            if self.nodelist[node].num_comp_connected > 2:
-                self.nontrivial_nodelist[node] = self.nodelist[node]
+            if node.num_comp_connected > 2:
+                self.nontrivial_nodelist.append(node)
 
     def create_branches(self):
         if len(self.nontrivial_nodelist) == 0:
-            self.branchlist.append(Branch())
-            for node_num in range(self.num_nodes - 1, -1, -1):  # -1 and -1 are for bounds limiting for range()
-                self.branchlist[0].component_list.append(self.nodelist["Node %d" % (node_num)])  # add sequentially
-                return self.branchlist
-        for node in self.nontrivial_nodelist.values():
-            for direction in list(set([x.pos if (x.neg == node) else x.neg for x in node.connected_comps.values()])):
+            current_branch = Branch()
+            current_branch.component_list.extend(self.component_list)
+            current_branch.nodelist.extend(self.nodelist)
+            map(lambda comp: setattr(comp, 'branch' ,current_branch.branch_num), self.component_list)
+            self.branchlist.append(current_branch)
+            return
+        for node in self.nontrivial_nodelist:
+            for direction in list(set([x.pos if (x.neg == node) else x.neg for x in node.connected_comps])):
                 if direction.num_comp_connected > 2:
                     # This only happens when two nodes are connected by a single component. therefore each component
                     # is a part of its own branch.
@@ -287,7 +296,7 @@ class Circuit:
                         # reached end of branch
                         self.branchlist.append(current_branch)
                         break
-                    next_comp = set(current_branch.nodelist[-1].connected_comps.values()) - set(current_branch.component_list)
+                    next_comp = set(current_branch.nodelist[-1].connected_comps) - set(current_branch.component_list)
                     next_comp = next_comp.pop()
                     """:type : components.Component"""
                     next_node = next_comp.pos if next_comp.neg == current_branch.nodelist[-1] else next_comp.neg
@@ -326,10 +335,10 @@ class Circuit:
 
     def calc_admittance_matrix(self):
         self.ym = [[complex(0, 0) for i in range(self.num_nodes)] for j in range(self.num_nodes)]
-        for node1 in self.nodelist.values():
-            for node2 in self.nodelist.values():
+        for node1 in self.nodelist:
+            for node2 in self.nodelist:
                 if node1 == node2:
-                    for comp in node1.connected_comps.values():
+                    for comp in node1.connected_comps:
                         if isinstance(comp, components.Impedance):
                             self.ym[node1.node_num][node1.node_num] += comp.y
                         else:
