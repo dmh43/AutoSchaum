@@ -49,7 +49,7 @@ class Node:
         self.voltage = float('NaN')
         self.node_num = self._num_nodes.next()
 
-    def add_comp(self, comp, name):
+    def add_comp(self, comp):
         """
         add a component that is connected to this node
         :type comp: components.Component
@@ -60,14 +60,17 @@ class Node:
         :rtype Node:
         """
         self.num_comp_connected += 1
-        self.connected_comps[name] = comp
+        self.connected_comps.append(comp)
         if isinstance(comp, components.Impedance):
             self.y_connected += comp.y
         return self
 
 
+# TODO ok. this is the last time I change this. Nodes should be identified by dicts so i dont have to search each time
+   # HEY. branch node lists need to be lists. all others should be called nodedict
 # TODO identify supernodes
 # TODO generate equations for node voltage analysis
+# TODO each circuit should have it's own components etc
 # TODO solve equations with sympy
 # TODO draw circuits
 # TODO determine I vector
@@ -118,15 +121,15 @@ class Branch:
     self.component_list gives the list of components which are encountered when traversing the branch from start to
         finish. Either self.component_list[0].pos or self.component_list[0].neg is connected to nodelist[0] depending
         on the the orientation of the component in the cirucit.
-    :type nodelist: list[Node]
-    :type component_list: list[components.Component]
+    :type nodelist: dict[int, Node]
+    :type component_list: dict[str, components.Component]
     :type branch_num: int
     """
     _num_branches = itertools.count(0)
 
     def __init__(self):
-        self.nodelist = []
-        self.component_list = []
+        self.nodelist = {int(): Node()}
+        self.component_list = {str(): components.Component()}
         self.branch_num = self._num_branches.next()
 
 
@@ -147,10 +150,10 @@ class Circuit:
         :type self.netlist_file: file
         :type self.netlist: str
         :type self.name: str
-        :type self.nodelist: list[Node]
-        :type self.nontrivial_nodelist: list[Node]
-        :type self.component_list: list[components.Component]
-        :type self.supernode_list: list[Supernode]
+        :type self.nodelist: dict[int, Node]
+        :type self.nontrivial_nodelist: dict[int, Node]
+        :type self.component_list: dict[str, components.Componen]
+        :type self.supernode_list: dict[int, Supernode]
         :type self.branchlist: list[Branch]
         :type self.ym: list[list[int]]
         :type self.num_nodes: int
@@ -162,10 +165,10 @@ class Circuit:
         self.netlist = self.netlist_file.read().split('\n')
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
-        self.nodelist = {str():Node()}
-        self.nontrivial_nodelist = [Node()]
-        self.component_list = [Node()]
-        self.supernode_list = [Node()]
+        self.nodelist = {int(): Node()}
+        self.nontrivial_nodelist = {int(): Node()}
+        self.component_list = {str(): Node()}
+        self.supernode_list = {int(): Node()}
         self.branchlist = [Branch()]
         self.ym = [[]]
         self.num_nodes = 0
@@ -192,6 +195,7 @@ class Circuit:
                                                                          range(len(branch.component_list)))]
         for node in self.nodelist:
             if any([node in v_source_branches[i].nodelist for i in range(len(v_source_branches))]):
+                pass
 
 
         for v_source in [x for x in self.component_list if isinstance(x, components.VoltageSource)]:
@@ -207,7 +211,7 @@ class Circuit:
                 sn_name = "Supernode {0}".format(v_source.pos.node_num)
                 connected_nodes = sn_branch.nodelist
                 self.supernode_list[sn_name] = Supernode(connected_nodes)
-                self.supernode_list[sn_name].
+                #self.supernode_list[sn_name].
 
                 # if the list of all non-voltage sources in branch is empty this means we need to create a supernode
                 # ok idk what to do here
@@ -230,8 +234,8 @@ class Circuit:
                                                    (self.nodelist[int(data[1])],
                                                     self.nodelist[int(data[2])]))
             """:type : components.Component"""
-            new_comp.pos.add_comp(new_comp, data[0])
-            new_comp.neg.add_comp(new_comp, data[0])
+            new_comp.pos.add_comp(new_comp)
+            new_comp.neg.add_comp(new_comp)
 
     def connecting(self, node1, node2):
         """
