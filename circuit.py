@@ -66,8 +66,6 @@ class Node:
         return self
 
 
-# TODO ok. this is the last time I change this. Nodes should be identified by dicts so i dont have to search each time
-   # HEY. branch node lists need to be lists. all others should be called nodedict
 # TODO identify supernodes
 # TODO generate equations for node voltage analysis
 # TODO each circuit should have it's own components etc
@@ -84,12 +82,11 @@ class Supernode(Node):
 
     def __init__(self, connected_nodes):
         """
-            :type connected_nodes: type([Node])
+            :type connected_nodes: list[Node]
             :param connected_nodes: List of nodes that are a part of the supernode. The first node in the list is the master
             :return:
         """
-        Node.__init__(self)
-        self.nodes = connected_nodes  # list of nodes that are a part of the supernode
+        self.nodedict = {connected_nodes[i].node_num : connected_nodes[i] for i in range(len(connected_nodes))}  # list of nodes that are a part of the supernode
         self.num_comp_connected = sum([i.num_comp_connected for i in self.nodes])
         self.y_connected = sum([i.y_connected for i in self.nodes])
         self.master_node = self.nodes[0]  # the master node is the first node that inserted into the supernode
@@ -121,15 +118,16 @@ class Branch:
     self.component_list gives the list of components which are encountered when traversing the branch from start to
         finish. Either self.component_list[0].pos or self.component_list[0].neg is connected to nodelist[0] depending
         on the the orientation of the component in the cirucit.
-    :type nodelist: dict[int, Node]
-    :type component_list: dict[str, components.Component]
+    :type nodelist: list[Node]
+    :type component_list: list[components.Component]
     :type branch_num: int
     """
     _num_branches = itertools.count(0)
 
     def __init__(self):
-        self.nodelist = {int(): Node()}
-        self.component_list = {str(): components.Component()}
+        self.nodelist = []
+        self.component_list = []
+        """:type : list[components.Component]"""
         self.branch_num = self._num_branches.next()
 
 
@@ -150,10 +148,10 @@ class Circuit:
         :type self.netlist_file: file
         :type self.netlist: str
         :type self.name: str
-        :type self.nodelist: dict[int, Node]
-        :type self.nontrivial_nodelist: dict[int, Node]
-        :type self.component_list: dict[str, components.Componen]
-        :type self.supernode_list: dict[int, Supernode]
+        :type self.nodedict: dict[int, Node]
+        :type self.nontrivial_nodedict: dict[int, Node]
+        :type self.component_list: [components.Componen]
+        :type self.supernode_dict: dict[int, Supernode]
         :type self.branchlist: list[Branch]
         :type self.ym: list[list[int]]
         :type self.num_nodes: int
@@ -165,15 +163,15 @@ class Circuit:
         self.netlist = self.netlist_file.read().split('\n')
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
-        self.nodelist = {int(): Node()}
-        self.nontrivial_nodelist = {int(): Node()}
-        self.component_list = {str(): Node()}
-        self.supernode_list = {int(): Node()}
-        self.branchlist = [Branch()]
+        self.nodedict = {}
+        self.nontrivial_nodedict = {}
+        self.component_list = []
+        self.supernode_dict = {}
+        self.branchlist = []
         self.ym = [[]]
         self.num_nodes = 0
-        self.equations = [str()]
-        self.ref = Node()
+        self.equations = []
+        self.ref = None
 
     def create_nodes(self):
         """
@@ -183,17 +181,30 @@ class Circuit:
         self.num_nodes = max([max(int(comp.split(' ')[1]), int(comp.split(' ')[2])) for comp in self.netlist]) + 1
         # this compensates for zero indexing
         for i in range(self.num_nodes):
-            self.nodelist[i] = Node()
+            self.nodedict[i] = Node()
 
     def create_supernodes(self):
         """
         Creates supernodes for the given circuit
         :return:
         """
+        # create list of all branches which contain voltage sources
+        v_source_branches = [comp.branch for comp in self.component_list if isinstance(comp, components.VoltageSource)]
+        """:type : list[Branch]"""
+        # create list of all branches which contain only voltage sources
+        v_source_branches = [branch for branch in v_source_branches if all([isinstance(
+            branch.component_list[i], components.VoltageSource) for i in range(len(branch.component_list))])]
+        """
         v_source_branches = [branch for branch in self.branchlist if any(isinstance(branch.component_list[i],
                                                                                     components.VoltageSource) for i in
                                                                          range(len(branch.component_list)))]
-        for node in self.nodelist:
+                                                                         """
+        return
+        for branch in v_source_branches:
+            if len(branch.component_list) == 1:
+                pass
+
+        for node in self.nodedict.values():
             if any([node in v_source_branches[i].nodelist for i in range(len(v_source_branches))]):
                 pass
 
@@ -224,15 +235,15 @@ class Circuit:
         This function defines the reference voltage to be the node with the most components connected
         :return:
         """
-        self.ref = sorted(self.nodelist, key = lambda node: node.num_comp_connected)[-1]
+        self.ref = sorted(self.nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
 
     def populate_nodes(self):
         for comp in self.netlist:
             data = comp.split(' ')
             """:type : list[str]"""
             new_comp = components.create_component(data[0], self.component_list, data[3],
-                                                   (self.nodelist[int(data[1])],
-                                                    self.nodelist[int(data[2])]))
+                                                   (self.nodedict[int(data[1])],
+                                                    self.nodedict[int(data[2])]))
             """:type : components.Component"""
             new_comp.pos.add_comp(new_comp)
             new_comp.neg.add_comp(new_comp)
@@ -264,20 +275,22 @@ class Circuit:
         connected to more than two components.
         :return:
         """
-        for node in self.nodelist:
+        for node in self.nodedict.values():
             if node.num_comp_connected > 2:
-                self.nontrivial_nodelist.append(node)
+                self.nontrivial_nodedict[node.node_num] = node
 
     def create_branches(self):
-        if len(self.nontrivial_nodelist) == 0:
+        # This can be recursive!
+        if len(self.nontrivial_nodedict.values()) == 0:
             current_branch = Branch()
-            current_branch.component_list.extend(self.component_list)
-            current_branch.nodelist.extend(self.nodelist)
-            map(lambda comp: setattr(comp, 'branch' ,current_branch.branch_num), self.component_list)
+            current_branch.component_list = self.component_list
+            current_branch.nodedict = self.nodedict
+            map(lambda comp: setattr(comp, 'branch', current_branch), self.component_list)
             self.branchlist.append(current_branch)
             return
-        for node in self.nontrivial_nodelist:
+        for node in self.nontrivial_nodedict.values():
             for direction in list(set([x.pos if (x.neg == node) else x.neg for x in node.connected_comps])):
+                assert isinstance(direction, Node)
                 if direction.num_comp_connected > 2:
                     # This only happens when two nodes are connected by a single component. therefore each component
                     # is a part of its own branch.
@@ -285,6 +298,7 @@ class Circuit:
                         current_branch = Branch()
                         current_branch.nodelist.extend([node, direction])
                         current_branch.component_list.append(comp)
+                        comp.branch = current_branch
                         if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
                                         current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
                             break
@@ -295,6 +309,7 @@ class Circuit:
                 current_branch.nodelist.append(node)  # The start node
                 current_branch.nodelist.append(direction)  # The direction to go down
                 current_branch.component_list.extend(self.connecting(node, direction))
+                map(lambda comp: setattr(comp, 'branch', current_branch), self.connecting(node, direction))
                 while True:  # Go down each one until you reach the end of the branch. I think this will find all branches
                     if current_branch.nodelist[-1].num_comp_connected > 2:
                         # reached end of branch
@@ -314,6 +329,8 @@ class Circuit:
                     current_branch.component_list.extend(
                         self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
                     # add the component connecting the new node and the last node
+                    map(lambda comp: setattr(comp, 'branch', current_branch),
+                        self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
                     if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
                                     current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
                         break  # if the branch has already been added, but in reverse then break
@@ -339,8 +356,8 @@ class Circuit:
 
     def calc_admittance_matrix(self):
         self.ym = [[complex(0, 0) for i in range(self.num_nodes)] for j in range(self.num_nodes)]
-        for node1 in self.nodelist:
-            for node2 in self.nodelist:
+        for node1 in self.nodedict.values():
+            for node2 in self.nodedict.values():
                 if node1 == node2:
                     for comp in node1.connected_comps:
                         if isinstance(comp, components.Impedance):

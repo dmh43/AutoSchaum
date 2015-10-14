@@ -7,6 +7,7 @@ class Component:
     """
     :type nodes: list[circuit.Node]
     :type name: str
+    :type branch: circuit.Branch
     """
     def __init__(self, nodes, name):
         self.nodes = nodes
@@ -98,6 +99,7 @@ class VoltageSource(Component):
 
 component_types = {'R':Resistor, 'C':Capacitor, 'L':Inductor, 'Z':Impedance, 'V':VoltageSource, 'I':CurrentSource,
     'VCVS':VCVS, 'CCVS':CCVS, 'VCIS':VCIS, 'ICIS':ICIS}
+
 
 def create_component(name, comp_list, value, nodes):
     """
