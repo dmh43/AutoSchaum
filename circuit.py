@@ -86,7 +86,7 @@ class Supernode(Node):
             :return:
         """
         # self.nodedict = {connected_nodes[i].node_num : connected_nodes[i] for i in range(len(connected_nodes))}  # list of nodes that are a part of the supernode
-        self.nodelist = list(set([branch.nodelist for branch in branches]))
+        self.nodelist = [node for node in list(itertools.chain(*[branch.nodelist for branch in branches]))]
         """:type : dict[int, Node]"""
         self.num_comp_connected = sum([i.num_comp_connected for i in self.nodelist])
         """:type : int"""
@@ -203,6 +203,7 @@ class Circuit:
             self.nodedict[i] = Node()
 
     def create_supernodes(self):
+        # TODO This doesnt work
         """
         Creates supernodes for the given circuit
         :return:
@@ -218,9 +219,9 @@ class Circuit:
             return
         for branch in v_source_branches:
             for comparison in list(set(v_source_branches) - set(branch)):
+                assert isinstance(comparison, Branch)
                 for node in branch.ending_nodes():
-                    start_node, end_node = comparison.ending_nodes()
-                    if node == start_node:
+                    if node in comparison.ending_nodes():
                         if branch.supernode == None and comparison.supernode == None:
                             self.supernode_list.append(Supernode([branch]))
                             self.supernode_list.append(Supernode([comparison]))
@@ -228,9 +229,6 @@ class Circuit:
                             branch.supernode.add_branch(comparison)
                         elif comparison.supernode != None:
                             comparison.supernode.add_branch(branch)
-                    elif node == end_node:
-                        self.supernode_list.append(Supernode([branch]))
-                        self.supernode_list.append(Supernode([comparison]))
 
     def define_reference_voltage(self):
         """
