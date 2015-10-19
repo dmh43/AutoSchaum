@@ -80,16 +80,25 @@ class Supernode(Node):
         identical to those of the master node.
     """
 
-    def __init__(self, connected_nodes):
+    def __init__(self, branches):
         """
-            :type connected_nodes: list[Node]
-            :param connected_nodes: List of nodes that are a part of the supernode. The first node in the list is the master
+            :type branches: list[Branch]
             :return:
         """
-        self.nodedict = {connected_nodes[i].node_num : connected_nodes[i] for i in range(len(connected_nodes))}  # list of nodes that are a part of the supernode
-        self.num_comp_connected = sum([i.num_comp_connected for i in self.nodes])
-        self.y_connected = sum([i.y_connected for i in self.nodes])
-        self.master_node = self.nodes[0]  # the master node is the first node that inserted into the supernode
+        # self.nodedict = {connected_nodes[i].node_num : connected_nodes[i] for i in range(len(connected_nodes))}  # list of nodes that are a part of the supernode
+        self.nodelist = list(set([branch.nodelist for branch in branches]))
+        """:type : dict[int, Node]"""
+        self.num_comp_connected = sum([i.num_comp_connected for i in self.nodelist])
+        """:type : int"""
+        self.y_connected = sum([i.y_connected for i in self.nodelist])
+        """:type : int"""
+        self.master_node = self.nodelist[0]  # the master node is the first node that inserted into the supernode
+        """:type : Node"""
+        self.branchlist = []
+        """:type : list[Branch]"""
+        for branch in branches:
+            branch.supernode = self
+            self.add_branch(branch)
 
     def evaluate_voltages(self):
         """
@@ -109,6 +118,10 @@ class Supernode(Node):
                         comp.pos.voltage = self.master_node.voltage + comp.v
             return True
 
+    def add_branch(self, branch):
+        self.branchlist.append(branch)
+        # TODO this should also add components and nodes!
+
 
 class Branch:
     """
@@ -126,9 +139,15 @@ class Branch:
 
     def __init__(self):
         self.nodelist = []
+        """:type : list[Node]"""
         self.component_list = []
         """:type : list[components.Component]"""
         self.branch_num = self._num_branches.next()
+        self.supernode = None
+        """:type : Supernode"""
+
+    def ending_nodes(self):
+        return [self.nodelist[0], self.nodelist[-1]]
 
 
 class Circuit:
@@ -145,33 +164,33 @@ class Circuit:
         R1 0 1 1
         R2 0 2 10
         R3 1 2 1
-        :type self.netlist_file: file
-        :type self.netlist: str
-        :type self.name: str
-        :type self.nodedict: dict[int, Node]
-        :type self.nontrivial_nodedict: dict[int, Node]
-        :type self.component_list: [components.Componen]
-        :type self.supernode_dict: dict[int, Supernode]
-        :type self.branchlist: list[Branch]
-        :type self.ym: list[list[int]]
-        :type self.num_nodes: int
-        :type self.equations: list[str]
-        :type self.ref: Node
-        
         """
         self.netlist_file = open(netlist_filename, 'r')
+        """:type : file"""
         self.netlist = self.netlist_file.read().split('\n')
+        """:type : str"""
         self.name = self.netlist[0]
+        """:type : str"""
         self.netlist = self.netlist[1:]
+        """:type : str"""
         self.nodedict = {}
+        """:type : dict[int, Node]"""
         self.nontrivial_nodedict = {}
+        """:type : dict[int, Node]"""
         self.component_list = []
-        self.supernode_dict = {}
+        """:type : [components.Component]"""
+        self.supernode_list = []
+        """:type : list[Supernode]"""
         self.branchlist = []
+        """:type : list[Branch]"""
         self.ym = [[]]
+        """:type : list[list[int]]"""
         self.num_nodes = 0
+        """:type : int"""
         self.equations = []
+        """:type : list[str]"""
         self.ref = None
+        """:type : Node"""
 
     def create_nodes(self):
         """
@@ -194,40 +213,24 @@ class Circuit:
         # create list of all branches which contain only voltage sources
         v_source_branches = [branch for branch in v_source_branches if all([isinstance(
             branch.component_list[i], components.VoltageSource) for i in range(len(branch.component_list))])]
-        """
-        v_source_branches = [branch for branch in self.branchlist if any(isinstance(branch.component_list[i],
-                                                                                    components.VoltageSource) for i in
-                                                                         range(len(branch.component_list)))]
-                                                                         """
-        return
+        if len(v_source_branches) == 1:
+            self.supernode_list.append(Supernode([branch]))
+            return
         for branch in v_source_branches:
-            if len(branch.component_list) == 1:
-                pass
-
-        for node in self.nodedict.values():
-            if any([node in v_source_branches[i].nodelist for i in range(len(v_source_branches))]):
-                pass
-
-
-        for v_source in [x for x in self.component_list if isinstance(x, components.VoltageSource)]:
-            assert isinstance(v_source, components.VoltageSource)
-            # checks to see which voltage sources are in branches containing only voltage sources
-            sn_branch = filter(lambda branch: v_source in branch.component_list, self.branchlist)
-            if len(sn_branch) != 1:
-                print("component %s in multiple branches!" % v_source.refdes)
-                exit()
-            sn_branch = sn_branch[0]
-            # this isnt right sunce you can have many voltage sources connecting each other in different branches
-            if not filter(lambda comp: type(comp) != components.VoltageSource, sn_branch.component_list):
-                sn_name = "Supernode {0}".format(v_source.pos.node_num)
-                connected_nodes = sn_branch.nodelist
-                self.supernode_list[sn_name] = Supernode(connected_nodes)
-                #self.supernode_list[sn_name].
-
-                # if the list of all non-voltage sources in branch is empty this means we need to create a supernode
-                # ok idk what to do here
-            # TODO finish
-        return
+            for comparison in list(set(v_source_branches) - set(branch)):
+                for node in branch.ending_nodes():
+                    start_node, end_node = comparison.ending_nodes()
+                    if node == start_node:
+                        if branch.supernode == None and comparison.supernode == None:
+                            self.supernode_list.append(Supernode([branch]))
+                            self.supernode_list.append(Supernode([comparison]))
+                        elif branch.supernode != None:
+                            branch.supernode.add_branch(comparison)
+                        elif comparison.supernode != None:
+                            comparison.supernode.add_branch(branch)
+                    elif node == end_node:
+                        self.supernode_list.append(Supernode([branch]))
+                        self.supernode_list.append(Supernode([comparison]))
 
     def define_reference_voltage(self):
         """
