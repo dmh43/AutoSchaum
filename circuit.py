@@ -48,6 +48,8 @@ class Node:
         self.connected_comps = []  # connected components
         self.voltage = float('NaN')
         self.node_num = self._num_nodes.next()
+        self.branchlist = []
+        """:type : list[Branch]"""
 
     def add_comp(self, comp):
         """
@@ -65,15 +67,17 @@ class Node:
             self.y_connected += comp.y
         return self
 
+# TODO maybe add_comp should be done when the component is instantiated?
 
-# TODO identify supernodes
 # TODO generate equations for node voltage analysis
-# TODO each circuit should have it's own components etc
 # TODO solve equations with sympy
+# TODO dependent voltage sources
+# TODO reorganize in a way that makes the next step easy
+# TODO shrink fuctions
+# TODO each circuit should have it's own components etc
 # TODO draw circuits
-# TODO determine I vector
 
-class Supernode(Node):
+class Supernode:
     """
         This class contains information about a group of nodes which form a supernode. Nodes that make up a supernode
         are interfaced only through the supernode class instance. The voltage and node number of the supernode are
@@ -87,7 +91,8 @@ class Supernode(Node):
         """
         # self.nodedict = {connected_nodes[i].node_num : connected_nodes[i] for i in range(len(connected_nodes))}  # list of nodes that are a part of the supernode
         self.nodelist = [node for node in list(itertools.chain(*[branch.nodelist for branch in branches]))]
-        """:type : dict[int, Node]"""
+        """:type : list[Node]"""
+        # TODO I dont think these next two values will be used
         self.num_comp_connected = sum([i.num_comp_connected for i in self.nodelist])
         """:type : int"""
         self.y_connected = sum([i.y_connected for i in self.nodelist])
@@ -120,7 +125,10 @@ class Supernode(Node):
 
     def add_branch(self, branch):
         self.branchlist.append(branch)
-        # TODO this should also add components and nodes!
+        #for comp in branch.component_list:
+            #self.add_comp(comp)
+        self.nodelist.extend(branch.nodelist)
+        self.nodelist = list(set(self.nodelist))
 
 
 class Branch:
@@ -145,6 +153,15 @@ class Branch:
         self.branch_num = self._num_branches.next()
         self.supernode = None
         """:type : Supernode"""
+
+    def add_node(self, node):
+        """
+        :type node: Node
+        :param node:
+        :return:
+        """
+        self.nodelist.append(node)
+        node.branchlist.append(self)
 
     def ending_nodes(self):
         return [self.nodelist[0], self.nodelist[-1]]
@@ -177,6 +194,8 @@ class Circuit:
         """:type : dict[int, Node]"""
         self.nontrivial_nodedict = {}
         """:type : dict[int, Node]"""
+        self.reduced_nodedict = {}
+        """:type : dict[int, Node]"""
         self.component_list = []
         """:type : [components.Component]"""
         self.supernode_list = []
@@ -191,6 +210,8 @@ class Circuit:
         """:type : list[str]"""
         self.ref = None
         """:type : Node"""
+        self.numerators = []
+        self.denomenators = []
 
     def create_nodes(self):
         """
@@ -203,7 +224,6 @@ class Circuit:
             self.nodedict[i] = Node()
 
     def create_supernodes(self):
-        # TODO This doesnt work
         """
         Creates supernodes for the given circuit
         :return:
@@ -215,20 +235,28 @@ class Circuit:
         v_source_branches = [branch for branch in v_source_branches if all([isinstance(
             branch.component_list[i], components.VoltageSource) for i in range(len(branch.component_list))])]
         if len(v_source_branches) == 1:
-            self.supernode_list.append(Supernode([branch]))
+            self.supernode_list.append(Supernode([v_source_branches[0]]))
             return
         for branch in v_source_branches:
             for comparison in list(set(v_source_branches) - set(branch)):
                 assert isinstance(comparison, Branch)
                 for node in branch.ending_nodes():
                     if node in comparison.ending_nodes():
-                        if branch.supernode == None and comparison.supernode == None:
+                        if branch.supernode is None and comparison.supernode is None:
                             self.supernode_list.append(Supernode([branch]))
                             self.supernode_list.append(Supernode([comparison]))
-                        elif branch.supernode != None:
+                        elif branch.supernode is not None:
                             branch.supernode.add_branch(comparison)
-                        elif comparison.supernode != None:
+                        elif comparison.supernode is not None:
                             comparison.supernode.add_branch(branch)
+
+    def sub_super_nodes(self):
+        internal_nodes = []
+        for sn in self.supernode_list:
+            internal_nodes.extend(list(set(sn.nodelist)-set([sn.master_node])))
+        for node in self.nodedict:
+            if self.nodedict[node] not in internal_nodes:
+                self.reduced_nodedict[node] = self.nodedict[node]
 
     def define_reference_voltage(self):
         """
@@ -236,7 +264,7 @@ class Circuit:
         This function defines the reference voltage to be the node with the most components connected
         :return:
         """
-        self.ref = sorted(self.nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
+        self.ref = sorted(self.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
 
     def populate_nodes(self):
         for comp in self.netlist:
@@ -285,7 +313,8 @@ class Circuit:
         if len(self.nontrivial_nodedict.values()) == 0:
             current_branch = Branch()
             current_branch.component_list = self.component_list
-            current_branch.nodedict = self.nodedict
+            for node in self.nodedict.values():
+                current_branch.add_node(node)
             map(lambda comp: setattr(comp, 'branch', current_branch), self.component_list)
             self.branchlist.append(current_branch)
             return
@@ -297,7 +326,8 @@ class Circuit:
                     # is a part of its own branch.
                     for comp in self.connecting(node, direction):
                         current_branch = Branch()
-                        current_branch.nodelist.extend([node, direction])
+                        current_branch.add_node(node)
+                        current_branch.add_node(direction)
                         current_branch.component_list.append(comp)
                         comp.branch = current_branch
                         if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
@@ -307,8 +337,8 @@ class Circuit:
                             self.branchlist.append(current_branch)
                     continue  # this direction has been exhausted, so go to the next direction
                 current_branch = Branch()
-                current_branch.nodelist.append(node)  # The start node
-                current_branch.nodelist.append(direction)  # The direction to go down
+                current_branch.add_node(node)  # The start node
+                current_branch.add_node(direction)  # The direction to go down
                 current_branch.component_list.extend(self.connecting(node, direction))
                 map(lambda comp: setattr(comp, 'branch', current_branch), self.connecting(node, direction))
                 while True:  # Go down each one until you reach the end of the branch. I think this will find all branches
@@ -325,7 +355,7 @@ class Circuit:
                         # looped around a branch somehow... look into this...
                         self.branchlist.append(current_branch)
                         break
-                    current_branch.nodelist.append(next_node)
+                    current_branch.add_node(next_node)
                     # jump to the other node of the component connected to this node and add it to the list
                     current_branch.component_list.extend(
                         self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
@@ -342,18 +372,43 @@ class Circuit:
                         self.branchlist.append(current_branch)
                         break
 
+    # TODO need a method to identify other node of a component when looking from the first node
+    # TODO need a method to identify directionality of voltage sources easily
+    # TODO modify code to encorporate those changes
+    # TODO identify items in parallel with each other
+    # TODO evaluate currents through easy to calculate branches
+
+    def identify_voltages(self):
+        return
+        # TODO recursively define this
+        self.ref.voltage = 0
+        #while
+        for comp in self.ref.connected_comps:
+            if isinstance(comp, components.VoltageSource):
+                other_node(comp, self.ref).voltage = comp.v
+        for comp in filter(lambda elem: isinstance(elem, components.VoltageSource), self.component_list):
+            for next_comp in (filter(lambda elem: isinstance(elem, components.VoltageSource), comp.pos.connected_comps) + filter(lambda elem: isinstance(elem, components.VoltageSource), comp.neg.connected_comps)):
+                other_node(next_comp, other_node(comp, self.ref)).voltage = other_node(comp, self.ref)
+
     def gen_node_voltage_eq(self):
         """
         :rtype: list[str]
         :return: list of strings to be sympified into sympy expressions
         """
         # TODO finish this!
-        for branch in self.branchlist:
-            current_eq = "V{0} ".format(branch.nodelist[0])
-            """:type : str"""
-            for comp in branch.component_list:
-                if isinstance(comp, components.VoltageSource):
-                    pass
+        for node in list(set(self.reduced_nodedict.values()) - set([self.ref])):
+            for branch in node.branchlist:
+                self.numerators.append([node])
+                self.denomenators.append([0])
+                for comp in branch.component_list:
+                    if isinstance(comp, components.VoltageSource):
+                        self.numerators[-1].extend(["-", comp])
+                    elif isinstance(comp, components.Resistor):
+                        self.denomenators[-1].append([comp])
+                    if comp.pos != node and comp.pos in self.reduced_nodedict.values():  # reached end of branch?
+                        self.numerators[-1].extend(["-", comp.pos])
+                    if comp.neg != node and comp.neg in self.reduced_nodedict.values():
+                        self.numerators[-1].extend(["-", comp.neg])
 
     def calc_admittance_matrix(self):
         self.ym = [[complex(0, 0) for i in range(self.num_nodes)] for j in range(self.num_nodes)]
@@ -369,3 +424,40 @@ class Circuit:
                     for comp in self.connecting(node1, node2):
                         if isinstance(comp, components.Impedance):
                             self.ym[node1.node_num][node2.node_num] -= comp.y
+
+
+class Cursor:
+    """
+    In order to traverse a circuit it becomes easier and more intuitive to imagine a cursor moving along branches and
+    loops and between nodes. It will make it easier to solve circuits using node voltage and mesh analysis. It will
+    also simplify the use of KVL and KCL.
+    """
+    def __init__(self):
+        self.current_node = None
+        """:type: Node"""
+        self.previous_nodes = []
+        """:type: list[Node]"""
+        self.previous_branches = []
+        """:type: list[Branch]"""
+
+    def step(self):
+        """takes a step down the branch that it is currently on"""
+
+    def directions(self):
+        """
+        Returns a dictionary of lists containing the directions the cursor can go separated into two lists
+        :rtype: dict[str, list[Node]]
+        """
+
+    def current_branch(self):
+
+def other_node(comp, node):
+    """
+    :type comp: components.Component
+    :type node: Node
+    :return:
+    """
+    if comp.pos == Node:
+        return comp.neg
+    else:
+        return comp.pos
