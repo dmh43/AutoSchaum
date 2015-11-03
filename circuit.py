@@ -67,7 +67,8 @@ class Node:
             self.y_connected += comp.y
         return self
 
-# TODO maybe add_comp should be done when the component is instantiated?
+# TODO add_comp should be done when the component is instantiated?
+# TODO change the way we keep track of node num? Should be a global in the circuit
 
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
@@ -277,26 +278,6 @@ class Circuit:
             new_comp.pos.add_comp(new_comp)
             new_comp.neg.add_comp(new_comp)
 
-    def connecting(self, node1, node2):
-        """
-        Gives all the components connected two nodes
-        :param node1: The first node
-        :type node1: Node
-        :param node2: The node connected to the second node via a component
-        :type node2: Node
-        :return: A list containing all the components connecting node1 and node2
-        :rtype list[components.Component:
-        """
-        comp_list = []
-        """:type : list[components.Component]"""
-        if node1 == node2:
-            return []
-        for comp in node1.connected_comps:
-            if comp.neg == node2:
-                comp_list.append(comp)
-            elif comp.pos == node2:
-                comp_list.append(comp)
-        return comp_list
 
     def identify_nontrivial_nodes(self):
         """
@@ -309,6 +290,7 @@ class Circuit:
                 self.nontrivial_nodedict[node.node_num] = node
 
     def create_branches(self):
+        # TODO separate into smaller functions
         # This can be recursive!
         if len(self.nontrivial_nodedict.values()) == 0:
             current_branch = Branch()
@@ -380,8 +362,8 @@ class Circuit:
 
     def identify_voltages(self):
         return
-        # TODO recursively define this
         self.ref.voltage = 0
+        # TODO complete this while loop with a nested for loop
         #while
         for comp in self.ref.connected_comps:
             if isinstance(comp, components.VoltageSource):
@@ -432,24 +414,65 @@ class Cursor:
     loops and between nodes. It will make it easier to solve circuits using node voltage and mesh analysis. It will
     also simplify the use of KVL and KCL.
     """
-    def __init__(self):
-        self.current_node = None
-        """:type: Node"""
-        self.previous_nodes = []
-        """:type: list[Node]"""
-        self.previous_branches = []
-        """:type: list[Branch]"""
+    def __init__(self, node):
+        """
+        :type node: Node
+        :param node: The node to place the cursor at
+        :return:
+        """
+        self.location = node
+        """:type : Node"""
+        self.nodes_seen = []
+        """:type : list[Node]"""
+        self.branches_seen = []
+        """:type : list[Branch]"""
+        self.components_seen = []
+        """:type : list[components.Component]"""
 
     def step(self):
-        """takes a step down the branch that it is currently on"""
+        """
+        takes a step down the branch that it is currently on. If you reach the end of the branch then it returns the
+        list of branches connected to the node that the cursor is currently at
+        """
+        self.nodes_seen.append(self.location)
+        branch = self.current_branch()
+        if isinstance(branch, list):
+            return branch
+        if not self.current_branch() in self.branches_seen:
+            self.branches_seen.append(branch)
+        for comp in self.location.connected_comps:
+            if comp in self.components_seen:
+                continue
+            else:
+                self.location = other_node(comp, self.location)
 
     def directions(self):
         """
-        Returns a dictionary of lists containing the directions the cursor can go separated into two lists
-        :rtype: dict[str, list[Node]]
+        Returns a list containing the directions (nodes) the cursor can go
+        :rtype: list[Node]
         """
+        return [other_node(comp, self.location) for comp in self.location.connected_comps]
+
+    def new_directions(self):
+        """
+        Returns a list containing the directions (nodes) that the cursor can go but has not been to yet
+        :rtype: list[Node]
+        """
+        new_direcs = []
+        for comp in self.location.connected_comps:
+            if comp in self.components_seen:
+                continue
+            else:
+                new_direcs.append(other_node(comp, self.location))
 
     def current_branch(self):
+        """
+        returns the current branch that the cursor is traversing
+        """
+        if len(self.location.branchlist) == 1:
+            return self.location.branchlist[0]
+        return self.location.branchlist
+
 
 def other_node(comp, node):
     """
@@ -461,3 +484,25 @@ def other_node(comp, node):
         return comp.neg
     else:
         return comp.pos
+
+
+def connecting(node1, node2):
+    """
+    Gives all the components connected two nodes
+    :param node1: The first node
+    :type node1: Node
+    :param node2: The node connected to the second node via a component
+    :type node2: Node
+    :return: A list containing all the components connecting node1 and node2
+    :rtype list[components.Component:
+    """
+    comp_list = []
+    """:type : list[components.Component]"""
+    if node1 == node2:
+        return []
+    for comp in node1.connected_comps:
+        if comp.neg == node2:
+            comp_list.append(comp)
+        elif comp.pos == node2:
+            comp_list.append(comp)
+    return comp_list
