@@ -109,6 +109,18 @@ class VoltageSource(Component):
         self.refdes = name
         self.branch = None
 
+    def set_other_node_voltage(self):
+        """
+        when the voltage is defined at one node of a voltage source, the other end is easy to define.
+        This function sets the voltage at the node that does not have a value if exactly one node has a defined voltag.
+        otherwise the function does nothing
+        """
+        # TODO some error handling can go in here
+        if self.pos.voltage_is_defined():
+            self.neg.voltage = self.pos.voltage - self.v
+        if self.neg.voltage_is_defined():
+            self.pos.voltage = self.neg.voltage + self.v
+
 
 component_types = {'R':Resistor, 'C':Capacitor, 'L':Inductor, 'Z':Impedance, 'V':VoltageSource, 'I':CurrentSource,
     'VCVS':VCVS, 'CCVS':CCVS, 'VCIS':VCIS, 'ICIS':ICIS}

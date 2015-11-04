@@ -1,6 +1,10 @@
 __author__ = 'Dany'
 
 from circuit import *
+import components
+
+def only_vsources(comp_list):
+    return filter(lambda comp: isinstance(comp, components.VoltageSource), comp_list)
 
 def other_node(comp, node):
     """

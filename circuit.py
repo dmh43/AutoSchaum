@@ -68,6 +68,9 @@ class Node:
             self.y_connected += comp.y
         return self
 
+    def voltage_is_defined(self):
+        return math.isnan(self.voltage)
+
 
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
@@ -364,6 +367,10 @@ class Circuit:
         return
         self.ref.voltage = 0
         kvl_cursor = Cursor(self.ref)
+        while kvl_cursor.location == self.ref and kvl_cursor.unseen_vsources_connected():  # While not empty and away from ref node
+            while kvl_cursor.unseen_vsources_connected():  # While not empty
+                kvl_cursor.location.voltage = only_vsources(kvl_cursor.step_down_unseen_vsource())[0]  # will only contain a single vsource at most
+            kvl_cursor.step_back()
         # TODO complete this while loop with a nested for loop
 
         while not self.solved_is:
@@ -426,7 +433,7 @@ class Cursor:
         """:type : Node"""
         self.nodes_seen = []
         """:type : list[Node]"""
-        self.branches_seen = []
+        self.branches_seen = []  # TODO This doesnt seem necessary
         """:type : list[Branch]"""
         self.components_seen = []
         """:type : list[components.Component]"""
@@ -445,15 +452,16 @@ class Cursor:
 
     def step_to(self, node):
         """
-        steps to a node connected to the current node
+        steps to a node connected to the current node and marks all the components connecting the two nodes as seen
         :param node:
         :type node: Node
-        :return: the list of components stepped over
+        :return: the list of components stepped over (connecting to the current node and the next node)
         """
         connecting_list = connecting(node, self.location)
         if node not in self.directions():
             return self.location
         self.location = node
+        self.components_seen.extend(connecting_list)
         self.nodes_seen.append(self.location)
         if self.current_branch() not in self.branches_seen:
             self.branches_seen.append(self.current_branch())
@@ -475,7 +483,10 @@ class Cursor:
         Steps down the first unseen voltage source in the list
         :return: returns the voltage source that was stepped over
         """
-        return self.step_to(self.unseen_vsources_connected()[0])[0]
+        return self.step_to(other_node(self.unseen_vsources_connected()[0], self.location))[0]
+
+    def step_back(self):
+        self.step_to(self.last_node_seen())
 
     def directions(self):
         """
