@@ -1,7 +1,7 @@
 __author__ = 'Dany'
 import math
 import circuit
-
+from helper_funcs import *
 
 class Component:
     """
@@ -29,6 +29,19 @@ class Component:
         :return:
         """
         return self.nodes[0]
+
+    def parallel(self):
+        """
+        :rtype : list[Component]
+        """
+        parallel_comps = []
+        for comp in self.pos.connected_comps:
+            if other_node(comp, self.pos) == self.neg:
+                parallel_comps.append(comp)
+        for comp in self.neg.connected_comps:
+            if other_node(comp, self.neg) == self.pos:
+                parallel_comps.append(comp)
+        return parallel_comps
 
 class Impedance(Component):
     def __init__(self, real, reactive, nodes, name):

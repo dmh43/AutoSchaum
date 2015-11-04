@@ -20,6 +20,7 @@ __author__ = 'Dany'
         I = YV; where I and V are vectors and Y is a matrix
 """
 import components
+from helper_funcs import *
 
 import math
 import cmath
@@ -67,13 +68,15 @@ class Node:
             self.y_connected += comp.y
         return self
 
-# TODO add_comp should be done when the component is instantiated?
-# TODO change the way we keep track of node num? Should be a global in the circuit
 
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
+
+# TODO for jesus de christo adopt a consistent naming convention
 # TODO dependent voltage sources
-# TODO reorganize in a way that makes the next step easy
+# TODO reorganize
+# TODO add_comp should be done when the component is instantiated?
+# TODO change the way we keep track of node num? Should be a global in the circuit
 # TODO shrink fuctions
 # TODO each circuit should have it's own components etc
 # TODO draw circuits
@@ -213,6 +216,7 @@ class Circuit:
         """:type : Node"""
         self.numerators = []
         self.denomenators = []
+        self.solved_is = False
 
     def create_nodes(self):
         """
@@ -354,20 +358,18 @@ class Circuit:
                         self.branchlist.append(current_branch)
                         break
 
-    # TODO need a method to identify other node of a component when looking from the first node
-    # TODO need a method to identify directionality of voltage sources easily
-    # TODO modify code to encorporate those changes
-    # TODO identify items in parallel with each other
     # TODO evaluate currents through easy to calculate branches
 
     def identify_voltages(self):
         return
         self.ref.voltage = 0
+        kvl_cursor = Cursor(self.ref)
         # TODO complete this while loop with a nested for loop
-        #while
-        for comp in self.ref.connected_comps:
-            if isinstance(comp, components.VoltageSource):
-                other_node(comp, self.ref).voltage = comp.v
+
+        while not self.solved_is:
+            for comp in self.ref.connected_comps:
+                if isinstance(comp, components.VoltageSource):
+                    other_node(comp, self.ref).voltage = comp.v
         for comp in filter(lambda elem: isinstance(elem, components.VoltageSource), self.component_list):
             for next_comp in (filter(lambda elem: isinstance(elem, components.VoltageSource), comp.pos.connected_comps) + filter(lambda elem: isinstance(elem, components.VoltageSource), comp.neg.connected_comps)):
                 other_node(next_comp, other_node(comp, self.ref)).voltage = other_node(comp, self.ref)
@@ -429,22 +431,51 @@ class Cursor:
         self.components_seen = []
         """:type : list[components.Component]"""
 
-    def step(self):
+    def last_component_seen(self):
+        return self.components_seen[-1]
+
+    def last_node_seen(self):
+        return self.nodes_seen[-1]
+
+    def vsources_connected(self):
+        return filter(lambda comp: isinstance(comp, components.VoltageSource), self.location.connected_comps)
+
+    def unseen_vsources_connected(self):
+        return filter(lambda vsource: vsource not in self.components_seen, self.vsources_connected())
+
+    def step_to(self, node):
         """
-        takes a step down the branch that it is currently on. If you reach the end of the branch then it returns the
-        list of branches connected to the node that the cursor is currently at
+        steps to a node connected to the current node
+        :param node:
+        :type node: Node
+        :return: the list of components stepped over
         """
+        connecting_list = connecting(node, self.location)
+        if node not in self.directions():
+            return self.location
+        self.location = node
         self.nodes_seen.append(self.location)
+        if self.current_branch() not in self.branches_seen:
+            self.branches_seen.append(self.current_branch())
+        return connecting_list
+
+    def step_forward(self):
+        """
+        takes a step forward along the branch that it is currently on.  it returns the node that it lands on
+        When at the end of a branch (at a non-trivial node), the function returns without moving the cursor
+        :return: the component that was stepped over
+        """
         branch = self.current_branch()
         if isinstance(branch, list):
-            return branch
-        if not self.current_branch() in self.branches_seen:
-            self.branches_seen.append(branch)
-        for comp in self.location.connected_comps:
-            if comp in self.components_seen:
-                continue
-            else:
-                self.location = other_node(comp, self.location)
+            return self.location
+        return self.step_to(self.new_directions()[0])[0]
+
+    def step_down_unseen_vsource(self):
+        """
+        Steps down the first unseen voltage source in the list
+        :return: returns the voltage source that was stepped over
+        """
+        return self.step_to(self.unseen_vsources_connected()[0])[0]
 
     def directions(self):
         """
@@ -460,10 +491,11 @@ class Cursor:
         """
         new_direcs = []
         for comp in self.location.connected_comps:
-            if comp in self.components_seen:
+            if comp == self.components_seen[-1]:
                 continue
             else:
                 new_direcs.append(other_node(comp, self.location))
+        return new_direcs
 
     def current_branch(self):
         """
@@ -473,36 +505,3 @@ class Cursor:
             return self.location.branchlist[0]
         return self.location.branchlist
 
-
-def other_node(comp, node):
-    """
-    :type comp: components.Component
-    :type node: Node
-    :return:
-    """
-    if comp.pos == Node:
-        return comp.neg
-    else:
-        return comp.pos
-
-
-def connecting(node1, node2):
-    """
-    Gives all the components connected two nodes
-    :param node1: The first node
-    :type node1: Node
-    :param node2: The node connected to the second node via a component
-    :type node2: Node
-    :return: A list containing all the components connecting node1 and node2
-    :rtype list[components.Component:
-    """
-    comp_list = []
-    """:type : list[components.Component]"""
-    if node1 == node2:
-        return []
-    for comp in node1.connected_comps:
-        if comp.neg == node2:
-            comp_list.append(comp)
-        elif comp.pos == node2:
-            comp_list.append(comp)
-    return comp_list
