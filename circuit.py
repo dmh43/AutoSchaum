@@ -269,7 +269,7 @@ class Circuit:
     def define_reference_voltage(self):
         """
         The user should be allowed to select the reference node!
-        This function defines the reference voltage to be the node with the most components connected
+        This function deines the reference voltage to be the node with the most components connected
         :return:
         """
         self.ref = sorted(self.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
@@ -313,7 +313,7 @@ class Circuit:
                 if direction.num_comp_connected > 2:
                     # This only happens when two nodes are connected by a single component. therefore each component
                     # is a part of its own branch.
-                    for comp in self.connecting(node, direction):
+                    for comp in connecting(node, direction):
                         current_branch = Branch()
                         current_branch.add_node(node)
                         current_branch.add_node(direction)
@@ -328,8 +328,8 @@ class Circuit:
                 current_branch = Branch()
                 current_branch.add_node(node)  # The start node
                 current_branch.add_node(direction)  # The direction to go down
-                current_branch.component_list.extend(self.connecting(node, direction))
-                map(lambda comp: setattr(comp, 'branch', current_branch), self.connecting(node, direction))
+                current_branch.component_list.extend(connecting(node, direction))
+                map(lambda comp: setattr(comp, 'branch', current_branch), connecting(node, direction))
                 while True:  # Go down each one until you reach the end of the branch. I think this will find all branches
                     if current_branch.nodelist[-1].num_comp_connected > 2:
                         # reached end of branch
@@ -347,10 +347,10 @@ class Circuit:
                     current_branch.add_node(next_node)
                     # jump to the other node of the component connected to this node and add it to the list
                     current_branch.component_list.extend(
-                        self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
+                        connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
                     # add the component connecting the new node and the last node
                     map(lambda comp: setattr(comp, 'branch', current_branch),
-                        self.connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
+                        connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
                     if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
                                     current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
                         break  # if the branch has already been added, but in reverse then break
@@ -364,22 +364,13 @@ class Circuit:
     # TODO evaluate currents through easy to calculate branches
 
     def identify_voltages(self):
-        return
         self.ref.voltage = 0
         kvl_cursor = Cursor(self.ref)
         while kvl_cursor.location == self.ref and kvl_cursor.unseen_vsources_connected():  # While not empty and away from ref node
             while kvl_cursor.unseen_vsources_connected():  # While not empty
-                kvl_cursor.location.voltage = only_vsources(kvl_cursor.step_down_unseen_vsource())[0]  # will only contain a single vsource at most
+                first_unseen_source = only_vsources(kvl_cursor.step_down_unseen_vsource())[0] # will only contain a single vsource at most
+                kvl_cursor.location.voltage = first_unseen_source.set_other_node_voltage()
             kvl_cursor.step_back()
-        # TODO complete this while loop with a nested for loop
-
-        while not self.solved_is:
-            for comp in self.ref.connected_comps:
-                if isinstance(comp, components.VoltageSource):
-                    other_node(comp, self.ref).voltage = comp.v
-        for comp in filter(lambda elem: isinstance(elem, components.VoltageSource), self.component_list):
-            for next_comp in (filter(lambda elem: isinstance(elem, components.VoltageSource), comp.pos.connected_comps) + filter(lambda elem: isinstance(elem, components.VoltageSource), comp.neg.connected_comps)):
-                other_node(next_comp, other_node(comp, self.ref)).voltage = other_node(comp, self.ref)
 
     def gen_node_voltage_eq(self):
         """
@@ -412,7 +403,7 @@ class Circuit:
                         else:
                             continue
                 else:
-                    for comp in self.connecting(node1, node2):
+                    for comp in connecting(node1, node2):
                         if isinstance(comp, components.Impedance):
                             self.ym[node1.node_num][node2.node_num] -= comp.y
 

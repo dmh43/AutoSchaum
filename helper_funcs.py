@@ -4,7 +4,14 @@ from circuit import *
 import components
 
 def only_vsources(comp_list):
+    """
+    Filters a list of components and returns the sublist of voltage sources
+    :type comp_list: list[components.Component]
+    :return:
+    :rtype: list[components.VoltageSource]
+    """
     return filter(lambda comp: isinstance(comp, components.VoltageSource), comp_list)
+
 
 def other_node(comp, node):
     """
@@ -12,7 +19,7 @@ def other_node(comp, node):
     :type node: Node
     :return:
     """
-    if comp.pos == Node:
+    if comp.pos == node:
         return comp.neg
     else:
         return comp.pos
