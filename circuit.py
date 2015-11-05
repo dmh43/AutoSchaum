@@ -69,9 +69,20 @@ class Node:
         return self
 
     def voltage_is_defined(self):
-        return math.isnan(self.voltage)
+        # TODO this is a mess because of the way I am defining self.voltage. fix this plzzzz
+        if self.voltage == 0:
+            return True
+        elif isinstance(self.voltage, float) and math.isnan(self.voltage):
+            return False
+        elif isinstance(self.voltage, complex) and cmath.isnan(self.voltage):
+            return False
+        elif self.voltage:
+            return True
+        else:
+            return False
 
 
+# TODO consider removing list comprehensions for something more easily debugggable
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
 
@@ -246,7 +257,7 @@ class Circuit:
             self.supernode_list.append(Supernode([v_source_branches[0]]))
             return
         for branch in v_source_branches:
-            for comparison in list(set(v_source_branches) - set(branch)):
+            for comparison in list(set(v_source_branches) - set([branch])):
                 assert isinstance(comparison, Branch)
                 for node in branch.ending_nodes():
                     if node in comparison.ending_nodes():
@@ -366,11 +377,15 @@ class Circuit:
     def identify_voltages(self):
         self.ref.voltage = 0
         kvl_cursor = Cursor(self.ref)
-        while kvl_cursor.location == self.ref and kvl_cursor.unseen_vsources_connected():  # While not empty and away from ref node
+        while True:
             while kvl_cursor.unseen_vsources_connected():  # While not empty
                 first_unseen_source = only_vsources(kvl_cursor.step_down_unseen_vsource())[0] # will only contain a single vsource at most
-                kvl_cursor.location.voltage = first_unseen_source.set_other_node_voltage()
-            kvl_cursor.step_back()
+                first_unseen_source.set_other_node_voltage()
+            if kvl_cursor.location != self.ref:
+                kvl_cursor.step_back()
+            else:
+                if not kvl_cursor.unseen_vsources_connected():
+                    
 
     def gen_node_voltage_eq(self):
         """
@@ -460,21 +475,21 @@ class Cursor:
 
     def step_forward(self):
         """
-        takes a step forward along the branch that it is currently on.  it returns the node that it lands on
+        takes a step forward along the branch that it is currently on.  it returns the list of stepped over components
         When at the end of a branch (at a non-trivial node), the function returns without moving the cursor
         :return: the component that was stepped over
         """
         branch = self.current_branch()
         if isinstance(branch, list):
             return self.location
-        return self.step_to(self.new_directions()[0])[0]
+        return self.step_to(self.new_directions()[0])
 
     def step_down_unseen_vsource(self):
         """
         Steps down the first unseen voltage source in the list
-        :return: returns the voltage source that was stepped over
+        :return: returns the list of components that was stepped over
         """
-        return self.step_to(other_node(self.unseen_vsources_connected()[0], self.location))[0]
+        return self.step_to(other_node(self.unseen_vsources_connected()[0], self.location))
 
     def step_back(self):
         self.step_to(self.last_node_seen())

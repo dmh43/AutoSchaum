@@ -117,9 +117,9 @@ class VoltageSource(Component):
         """
         # TODO some error handling can go in here
         if self.pos.voltage_is_defined():
-            self.neg.voltage = self.pos.voltage - self.v
-        if self.neg.voltage_is_defined():
-            self.pos.voltage = self.neg.voltage + self.v
+            self.neg.voltage = self.pos.voltage - complex(self.v, 0)  # TODO will need to fix this for compelx voltages
+        elif self.neg.voltage_is_defined():
+            self.pos.voltage = self.neg.voltage + complex(self.v, 0)  # TODO will need to fix this for compelx voltages
 
 
 component_types = {'R':Resistor, 'C':Capacitor, 'L':Inductor, 'Z':Impedance, 'V':VoltageSource, 'I':CurrentSource,
