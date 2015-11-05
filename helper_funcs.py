@@ -13,6 +13,16 @@ def only_vsources(comp_list):
     return filter(lambda comp: isinstance(comp, components.VoltageSource), comp_list)
 
 
+def only_resistances(comp_list):
+    """
+    Filters a list of components and returns the sublist of resistances
+    :type comp_list: list[components.Component]
+    :return:
+    :rtype: list[components.Resistor]
+    """
+    return filter(lambda comp: isinstance(comp, components.Resistor), comp_list)
+
+
 def other_node(comp, node):
     """
     :type comp: components.Component

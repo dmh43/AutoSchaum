@@ -30,6 +30,10 @@ class Component:
         """
         return self.nodes[0]
 
+    @property
+    def voltage(self):
+        return self.pos.voltage - self.neg.voltage
+
     def parallel(self):
         """
         :rtype : list[Component]

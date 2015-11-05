@@ -81,8 +81,27 @@ class Node:
         else:
             return False
 
+    def kcl_is_easy(self):
+        """
+        Determines whether KCL is easy to evaluate at this node.
+        # TODO should be overloaded later to include options for all KCL options
+        """
+        return len(self.undefined_current_branches()) == 1
 
-# TODO consider removing list comprehensions for something more easily debugggable
+    def undefined_current_branches(self):
+        return filter(lambda branch: branch.current_is_defined(), self.branchlist)
+
+    def solve_kcl(self):
+         # TODO FINISH THIS!!
+        if self.kcl_is_easy():
+            kcl_eq_RHS = self.undefined_current_branches()[0]
+            known_current_branches = list(set(self.branchlist) - set([kcl_eq_RHS]))
+            kcl_eq_LHS = reduce(lambda running_sum,branch: running_sum + branch.current, known_current_branches, 0)
+            kcl_eq_RHS.current = kcl_eq_LHS
+
+
+# TODO determine easy currents
+# TODO write function to go back and forth until all easy ones are found
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
 
@@ -91,6 +110,7 @@ class Node:
 # TODO reorganize
 # TODO add_comp should be done when the component is instantiated?
 # TODO change the way we keep track of node num? Should be a global in the circuit
+# TODO consider removing list comprehensions for something more easily debugggable
 # TODO shrink fuctions
 # TODO each circuit should have it's own components etc
 # TODO draw circuits
@@ -171,6 +191,8 @@ class Branch:
         self.branch_num = self._num_branches.next()
         self.supernode = None
         """:type : Supernode"""
+        self.current = None
+        """:type : complex"""
 
     def add_node(self, node):
         """
@@ -183,6 +205,18 @@ class Branch:
 
     def ending_nodes(self):
         return [self.nodelist[0], self.nodelist[-1]]
+
+    def current_is_defined(self):
+        if self.current == 0:
+            return True
+        elif isinstance(self.current, float) and math.isnan(self.current):
+            return False
+        elif isinstance(self.current, complex) and cmath.isnan(self.current):
+            return False
+        elif self.current:
+            return True
+        else:
+            return False
 
 
 class Circuit:
@@ -296,7 +330,6 @@ class Circuit:
             new_comp.pos.add_comp(new_comp)
             new_comp.neg.add_comp(new_comp)
 
-
     def identify_nontrivial_nodes(self):
         """
         This function identifies the nontrivial nodes of a circuit. Specifically, this means all nodes that are
@@ -372,8 +405,6 @@ class Circuit:
                         self.branchlist.append(current_branch)
                         break
 
-    # TODO evaluate currents through easy to calculate branches
-
     def identify_voltages(self):
         self.ref.voltage = 0
         kvl_cursor = Cursor(self.ref)
@@ -387,6 +418,12 @@ class Circuit:
                 break
             else:  # if at ref but more vsources to go then continue
                 continue
+
+    def identify_currents(self):
+        for res in only_resistances(self.component_list):
+            res.branch.current = res.voltage/res.z
+
+    # TODO add another func for KCL but in terms of sympy equations where it can generate many sympy
 
     def gen_node_voltage_eq(self):
         """
