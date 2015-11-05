@@ -381,11 +381,12 @@ class Circuit:
             while kvl_cursor.unseen_vsources_connected():  # While not empty
                 first_unseen_source = only_vsources(kvl_cursor.step_down_unseen_vsource())[0] # will only contain a single vsource at most
                 first_unseen_source.set_other_node_voltage()
-            if kvl_cursor.location != self.ref:
+            if kvl_cursor.location != self.ref:  # if you're no longer at ref
                 kvl_cursor.step_back()
-            else:
-                if not kvl_cursor.unseen_vsources_connected():
-                    
+            elif not kvl_cursor.unseen_vsources_connected():  # if no more sources and at ref node
+                break
+            else:  # if at ref but more vsources to go then continue
+                continue
 
     def gen_node_voltage_eq(self):
         """
@@ -443,6 +444,8 @@ class Cursor:
         """:type : list[Branch]"""
         self.components_seen = []
         """:type : list[components.Component]"""
+        self.breadcrumbs = []  # Keep track where you came from
+        """:type : list[Node]"""
 
     def last_component_seen(self):
         return self.components_seen[-1]
@@ -482,6 +485,8 @@ class Cursor:
         branch = self.current_branch()
         if isinstance(branch, list):
             return self.location
+        self.breadcrumbs.append(self.location)
+        # TODO breadcrumbs should be its own class but with  better name
         return self.step_to(self.new_directions()[0])
 
     def step_down_unseen_vsource(self):
@@ -489,10 +494,11 @@ class Cursor:
         Steps down the first unseen voltage source in the list
         :return: returns the list of components that was stepped over
         """
+        self.breadcrumbs.append(self.location)
         return self.step_to(other_node(self.unseen_vsources_connected()[0], self.location))
 
     def step_back(self):
-        self.step_to(self.last_node_seen())
+        self.step_to(self.breadcrumbs.pop())
 
     def directions(self):
         """
