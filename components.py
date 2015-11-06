@@ -3,7 +3,7 @@ import math
 import circuit
 from helper_funcs import *
 
-class Component:
+class Component(object):
     """
     :type nodes: list[circuit.Node]
     :type name: str
@@ -46,6 +46,12 @@ class Component:
             if other_node(comp, self.neg) == self.pos:
                 parallel_comps.append(comp)
         return parallel_comps
+
+    def has_branch(self):
+        if self.branch:
+            return True
+        else:
+            return False
 
 class Impedance(Component):
     def __init__(self, real, reactive, nodes, name):

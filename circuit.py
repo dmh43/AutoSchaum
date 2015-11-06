@@ -28,7 +28,7 @@ import itertools
 import sympy
 
 
-class Node:
+class Node(object):
     """
     contains information about which devices are connected to which nodes and which nodes are supernodes and gnd
     :type num_comp_connected: int
@@ -114,7 +114,7 @@ class Node:
 # TODO each circuit should have it's own components etc
 # TODO draw circuits
 
-class Supernode:
+class Supernode(object):
     """
         This class contains information about a group of nodes which form a supernode. Nodes that make up a supernode
         are interfaced only through the supernode class instance. The voltage and node number of the supernode are
@@ -168,7 +168,7 @@ class Supernode:
         self.nodelist = list(set(self.nodelist))
 
 
-class Branch:
+class Branch(object):
     """
     Defines a branch connecting two nontrivial nodes
     self.nodelist gives the list of nodes in the order which they are encountered going from start (nodelist[0])
@@ -193,6 +193,19 @@ class Branch:
         self.current = None
         """:type : complex"""
 
+    def __eq__(self, other_branch):
+        """
+        :type other_branch: Branch
+        :return:
+        """
+        return self.component_list == other_branch.component_list
+
+    def __ne__(self, other_branch):
+        return not (self == other_branch)
+
+    def __hash__(self):
+        return hash(self.branch_num)
+
     def add_node(self, node):
         """
         :type node: Node
@@ -204,6 +217,10 @@ class Branch:
 
     def ending_nodes(self):
         return [self.nodelist[0], self.nodelist[-1]]
+
+    def is_complete_branch(self):
+        # TODO add capability to detect a branch that is the whole circuit
+        return self.nodelist[-1].num_comp_connected > 2
 
     def current_is_defined(self):
         if self.current == 0:
@@ -217,8 +234,19 @@ class Branch:
         else:
             return False
 
+    def add_comp(self, comp):
+        """
+        :type comp: components.Component
+        :return:
+        """
+        if comp in self.component_list:
+            return
+        self.component_list.append(comp)
+        comp.branch = self
+        return comp
 
-class Circuit:
+
+class Circuit(object):
     def __init__(self, netlist_filename):
         """
         the input circuit is in the form of a SPICE netlist
@@ -340,69 +368,109 @@ class Circuit:
                 self.nontrivial_nodedict[node.node_num] = node
 
     def create_branches(self):
-        # TODO separate into smaller functions
-        # This can be recursive!
         if len(self.nontrivial_nodedict.values()) == 0:
             current_branch = Branch()
             current_branch.component_list = self.component_list
             for node in self.nodedict.values():
                 current_branch.add_node(node)
-            map(lambda comp: setattr(comp, 'branch', current_branch), self.component_list)
-            self.branchlist.append(current_branch)
+            for comp in current_branch.component_list:
+                if comp.has_branch():
+                    continue  # TODO this is repeated code. make into function
+                else:
+                    comp.branch = current_branch
+                    if current_branch not in self.branchlist:
+                        self.branchlist.append(current_branch)
             return
         for node in self.nontrivial_nodedict.values():
-            for direction in list(set([x.pos if (x.neg == node) else x.neg for x in node.connected_comps])):
-                assert isinstance(direction, Node)
-                if direction.num_comp_connected > 2:
-                    # This only happens when two nodes are connected by a single component. therefore each component
-                    # is a part of its own branch.
-                    for comp in connecting(node, direction):
-                        current_branch = Branch()
-                        current_branch.add_node(node)
-                        current_branch.add_node(direction)
-                        current_branch.component_list.append(comp)
-                        comp.branch = current_branch
-                        if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
-                                        current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
-                            break
-                        else:
-                            self.branchlist.append(current_branch)
-                    continue  # this direction has been exhausted, so go to the next direction
-                current_branch = Branch()
-                current_branch.add_node(node)  # The start node
-                current_branch.add_node(direction)  # The direction to go down
-                current_branch.component_list.extend(connecting(node, direction))
-                map(lambda comp: setattr(comp, 'branch', current_branch), connecting(node, direction))
-                while True:  # Go down each one until you reach the end of the branch. I think this will find all branches
-                    if current_branch.nodelist[-1].num_comp_connected > 2:
-                        # reached end of branch
-                        self.branchlist.append(current_branch)
+            new_branch = Branch()
+            new_branch.add_node(node)
+            branch_cursor = BranchCursor(node, new_branch)
+            while branch_cursor.new_directions():
+                while True:
+                    for comp in branch_cursor.step_down_branch():
+                    if new_branch.is_complete_branch():
                         break
-                    next_comp = set(current_branch.nodelist[-1].connected_comps) - set(current_branch.component_list)
-                    next_comp = next_comp.pop()
-                    """:type : components.Component"""
-                    next_node = next_comp.pos if next_comp.neg == current_branch.nodelist[-1] else next_comp.neg
-                    """:type : Node"""
-                    if next_node in current_branch.nodelist:
-                        # looped around a branch somehow... look into this...
-                        self.branchlist.append(current_branch)
-                        break
-                    current_branch.add_node(next_node)
-                    # jump to the other node of the component connected to this node and add it to the list
-                    current_branch.component_list.extend(
-                        connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
-                    # add the component connecting the new node and the last node
-                    map(lambda comp: setattr(comp, 'branch', current_branch),
-                        connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
-                    if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
-                                    current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
-                        break  # if the branch has already been added, but in reverse then break
-                        # and dont add a new branch to the branchlist
-                        # This will work because it checks to see if the array is flipped. ie it only checks for
-                        # finding the same branch but in the opposite direction
-                    else:
-                        self.branchlist.append(current_branch)
-                        break
+                if new_branch not in self.branchlist:
+                    self.branchlist.append(new_branch)
+                branch_cursor.location = node
+
+    # def create_branches(self):
+    #     # TODO separate into smaller functions
+    #     # This can be recursive!
+    #     if len(self.nontrivial_nodedict.values()) == 0:
+    #         current_branch = Branch()
+    #         current_branch.component_list = self.component_list
+    #         for node in self.nodedict.values():
+    #             current_branch.add_node(node)
+    #         for comp in current_branch.component_list:
+    #             if comp.has_branch():
+    #                 continue  # TODO this is repeated code. make into function
+    #             else:
+    #                 comp.branch = current_branch
+    #                 if current_branch not in self.branchlist:
+    #                     self.branchlist.append(current_branch)
+    #         return
+    #     for node in self.nontrivial_nodedict.values():
+    #         branch_cursor = Cursor(node)
+    #         for direction in list(set([x.pos if (x.neg == node) else x.neg for x in node.connected_comps])):
+    #             assert isinstance(direction, Node)
+    #             if len(connecting(direction, node)) > 1:
+    #                 # This only happens when two nodes are connected by single comp branches. therefore each component
+    #                 # is a part of its own branch.
+    #                 for comp in connecting(node, direction):
+    #                     if comp.has_branch():
+    #                         continue
+    #                     current_branch = Branch()
+    #                     current_branch.add_node(node)
+    #                     current_branch.add_node(direction)
+    #                     current_branch.component_list.append(comp)
+    #                     comp.branch = current_branch
+    #                     if current_branch in self.branchlist:
+    #                         break
+    #                     else:
+    #                         self.branchlist.append(current_branch)
+    #                 continue  # this direction has been exhausted, so go to the next direction
+    #             current_branch = Branch()
+    #             current_branch.add_node(node)  # The start node
+    #             current_branch.add_node(direction)  # The direction to go down
+    #             current_branch.component_list.extend(connecting(node, direction))  # only one comp anyway
+    #             for comp in connecting(node, direction):
+    #                 if comp.has_branch():
+    #                     continue
+    #                 else:
+    #                     comp.branch = current_branch
+    #             while True:  # Go down each one until you reach the end of the branch. I think this will find all branches
+    #                 if current_branch.is_complete_branch():
+    #                     self.branchlist.append(current_branch)
+    #                     break
+    #                 next_comp = set(current_branch.nodelist[-1].connected_comps) - set(current_branch.component_list)
+    #                 next_comp = next_comp.pop()
+    #                 """:type : components.Component"""
+    #                 next_node = next_comp.pos if next_comp.neg == current_branch.nodelist[-1] else next_comp.neg
+    #                 """:type : Node"""
+    #                 if next_node in current_branch.nodelist:
+    #                     # looped around a branch somehow... look into this...
+    #                     self.branchlist.append(current_branch)
+    #                     break
+    #                 current_branch.add_node(next_node)
+    #                 # jump to the other node of the component connected to this node and add it to the list
+    #                 current_branch.component_list.extend(
+    #                     connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]))
+    #                 # add the component connecting the new node and the last node
+    #                 for comp in connecting(current_branch.nodelist[-2], current_branch.nodelist[-1]):
+    #                     if comp.has_branch():
+    #                         continue
+    #                     else:
+    #                         comp.branch = current_branch
+    #                 if current_branch.nodelist[0] in [x.nodelist[-1] for x in self.branchlist] or \
+    #                                 current_branch.nodelist[-1] in [x.nodelist[0] for x in self.branchlist]:
+    #                     break  # if the branch has already been added, but in reverse then break
+    #                     # and dont add a new branch to the branchlist
+    #                     # This will work because it checks to see if the array is flipped. ie it only checks for
+    #                     # finding the same branch but in the opposite direction
+    #                 else:
+    #                     self.branchlist.append(current_branch)
+    #                     break
 
     def identify_voltages(self):
         self.ref.voltage = 0
@@ -464,7 +532,7 @@ class Circuit:
                             self.ym[node1.node_num][node2.node_num] -= comp.y
 
 
-class Cursor:
+class Cursor(object):
     """
     In order to traverse a circuit it becomes easier and more intuitive to imagine a cursor moving along branches and
     loops and between nodes. It will make it easier to solve circuits using node voltage and mesh analysis. It will
@@ -480,8 +548,6 @@ class Cursor:
         """:type : Node"""
         self.nodes_seen = []
         """:type : list[Node]"""
-        self.branches_seen = []  # TODO This doesnt seem necessary
-        """:type : list[Branch]"""
         self.components_seen = []
         """:type : list[components.Component]"""
         self.breadcrumbs = []  # Keep track where you came from
@@ -512,9 +578,28 @@ class Cursor:
         self.location = node
         self.components_seen.extend(connecting_list)
         self.nodes_seen.append(self.location)
-        if self.current_branch() not in self.branches_seen:
-            self.branches_seen.append(self.current_branch())
         return connecting_list
+
+    def unseen(self, comp_list):
+        return filter(lambda comp: comp not in self.components_seen, comp_list)
+
+    def step_along(self, node):
+        """
+        steps to a node connected to the current node and marks only
+        the first unseen component as read (as if stepping along that component)
+        :param node:
+        :type node: Node
+        :return: the component stepped along (the one marked as seen)
+        """
+        unseen_connecting_list = self.unseen(connecting(node, self.location))
+        if node not in self.directions():
+            raise ValueError
+        self.location = node
+        if not unseen_connecting_list:
+            return []
+        self.components_seen.append(unseen_connecting_list[0])
+        self.nodes_seen.append(self.location)
+        return unseen_connecting_list[0]
 
     def step_forward(self):
         """
@@ -554,7 +639,7 @@ class Cursor:
         """
         new_direcs = []
         for comp in self.location.connected_comps:
-            if comp == self.components_seen[-1]:
+            if comp in self.components_seen:
                 continue
             else:
                 new_direcs.append(other_node(comp, self.location))
@@ -567,4 +652,44 @@ class Cursor:
         if len(self.location.branchlist) == 1:
             return self.location.branchlist[0]
         return self.location.branchlist
+
+    def step_along_branch(self):
+        """
+        This function will go down the first unseen branch
+        :return: returns a list of the components connecting the old and new location
+        :rtype: list[comp]
+        """
+        return self.step_along(self.new_directions()[0])
+
+
+class BranchCursor(Cursor):
+    """
+    This class takes a reference to a new branch and a node to start at
+    and creates a cursor which adds components and nodes to the branch
+    as it walks down it
+    """
+    def __init__(self, node, branch):
+        """
+        :type node: Node
+        :type branch: Branch
+        :return:
+        """
+        super(BranchCursor, self).__init__(node)
+        self.branch = branch
+
+    def step_to(self, node):
+        for comp in connecting(self.location, node):
+            self.branch.add_comp(comp)
+        super(BranchCursor, self).step_to(node)
+        self.branch.add_node(node)
+        return connecting(self.last_node_seen(), node)
+
+    def step_along(self, node):
+        new_comp_seen = super(BranchCursor, self).step_to(node)
+        self.branch.add_comp(new_comp_seen)
+        self.branch.add_node(node)
+        return new_comp_seen
+
+    def step_along_branch(self):
+        return super(BranchCursor, self).step_along_branch()
 
