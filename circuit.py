@@ -89,10 +89,9 @@ class Node:
         return len(self.undefined_current_branches()) == 1
 
     def undefined_current_branches(self):
-        return filter(lambda branch: branch.current_is_defined(), self.branchlist)
+        return filter(lambda branch: not branch.current_is_defined(), self.branchlist)
 
     def solve_kcl(self):
-         # TODO FINISH THIS!!
         if self.kcl_is_easy():
             kcl_eq_RHS = self.undefined_current_branches()[0]
             known_current_branches = list(set(self.branchlist) - set([kcl_eq_RHS]))
@@ -444,6 +443,10 @@ class Circuit:
                         self.numerators[-1].extend(["-", comp.pos])
                     if comp.neg != node and comp.neg in self.reduced_nodedict.values():
                         self.numerators[-1].extend(["-", comp.neg])
+
+    def kcl_everywhere(self):
+        for node in self.nodedict.values():
+            node.solve_kcl()
 
     def calc_admittance_matrix(self):
         self.ym = [[complex(0, 0) for i in range(self.num_nodes)] for j in range(self.num_nodes)]
