@@ -207,6 +207,17 @@ class Branch(object):
     def __hash__(self):
         return hash(self.branch_num)
 
+    @property
+    def node_current_in(self):
+        """
+        Returns the node at which the defined current enters the branch
+        :return:
+        """
+        if self.nodelist:
+            return self.nodelist[0]
+        else:
+            return
+
     def add_node(self, node):
         """
         :type node: Node
@@ -246,6 +257,7 @@ class Branch(object):
             return
         self.component_list.append(comp)
         comp.branch = self
+        comp. = high_node(comp, self.node_current_in)
         return comp
 
 
@@ -385,10 +397,13 @@ class Circuit(object):
                         self.branchlist.append(current_branch)
             return
         for node in self.nontrivial_nodedict.values():
+            if not only_branchless(node.connected_comps):  # if all conncomps have branches
+                # TODO maybe wrap in a function^
+                continue
             new_branch = Branch()
             new_branch.add_node(node)
-            branch_cursor = BranchCursor(node, new_branch)
-            while branch_cursor.new_alongs():
+            branch_cursor = BranchCreatorCursor(node, new_branch)
+            while only_branchless(node.connected_comps):  # no more branchless conncomps
                 while True:
                     branch_cursor.step_along_branch()
                     if new_branch.is_complete_branch():
@@ -402,6 +417,9 @@ class Circuit(object):
                 else:
                     for undo_node in new_branch.nodelist:
                         undo_node.branchlist.pop()  # TODO oh... this is ugly. fix it. plz
+                if not only_branchless(node.connected_comps):  # if all conncomps have branches
+                    # TODO maybe wrap in a function^
+                    break
                 new_branch = Branch()
                 new_branch.add_node(node)
                 branch_cursor.branch = new_branch  # TODO wrap in method?
@@ -424,6 +442,12 @@ class Circuit(object):
                 continue
 
     def identify_currents(self):
+        """
+        Defines the curent through the branch each resistor is in, in the direction going into the
+        positive node of each resistor
+        This is consistent with passive sign convention for that resistor
+        :return:
+        """
         for res in only_resistances(self.component_list):
             res.branch.current = res.voltage/res.z
 
@@ -607,8 +631,22 @@ class Cursor(object):
         """
         return self.step_along(self.new_directions()[0])
 
+    def at_branch_end(self):
+        if self.directions() > 2:
+            return True
+        else:
+            return False
 
-class BranchCursor(Cursor):
+    def step_forward_away(self, node):
+        """
+        Takes a step forward in the first direction away from node
+        """
+        # TODO change this and other similar functions to call a parent fun which has variable isntead of 0
+        next_node_choices = [direc for direc in self.directions() if direc != node]
+        return self.step_to(next_node_choices[0])
+
+
+class BranchCreatorCursor(Cursor):
     """
     This class takes a reference to a new branch and a node to start at
     and creates a cursor which adds components and nodes to the branch
@@ -620,23 +658,23 @@ class BranchCursor(Cursor):
         :type branch: Branch
         :return:
         """
-        super(BranchCursor, self).__init__(node)
+        super(BranchCreatorCursor, self).__init__(node)
         self.branch = branch
 
     def step_to(self, node):
         for comp in connecting(self.location, node):
             self.branch.add_comp(comp)
-        super(BranchCursor, self).step_to(node)
+        super(BranchCreatorCursor, self).step_to(node)
         self.branch.add_node(node)
         return connecting(self.last_node_seen(), node)
 
     def step_along(self, node):
-        new_comp_seen = super(BranchCursor, self).step_along(node)
+        new_comp_seen = super(BranchCreatorCursor, self).step_along(node)
         self.branch.add_comp(new_comp_seen)
         self.branch.add_node(node)
         return new_comp_seen
 
     def step_along_branch(self):
-        return super(BranchCursor, self).step_along_branch()
+        return super(BranchCreatorCursor, self).step_along_branch()
 
 

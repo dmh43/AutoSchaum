@@ -13,6 +13,7 @@ class Component(object):
         self.nodes = nodes
         self.refdes = name
         self.branch = None
+        self.orientation = None
 
     @property
     def neg(self):
@@ -32,7 +33,34 @@ class Component(object):
 
     @property
     def voltage(self):
+        """
+        Voltage drop across the component from pos to neg
+        :return:
+        """
         return self.pos.voltage - self.neg.voltage
+
+    @property
+    def current(self):
+        """
+        Returns the current entering the pos node of the component
+        This is consistent with passive sign convention
+        :return:
+        """
+        # TODO this method makes it apparent that a Current class would be helpful since you want direction and magnitude
+        if self.has_branch():
+            if self.branch.current_is_defined():
+                # TODO modify for directionalirty of branch
+                return self.branch.current
+        else:
+            return
+
+    # @property
+    # def power(self):
+    #     """
+    #     Passive sign convention defined power
+    #     :return:
+    #     """
+    #     return self.current*self.voltage
 
     def parallel(self):
         """
