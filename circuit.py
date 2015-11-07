@@ -192,8 +192,6 @@ class Branch(object):
         """:type : Supernode"""
         self.current = None
         """:type : complex"""
-        self.node_current_in = None
-        """:type : Node"""
 
     def __eq__(self, other_branch):
         """
@@ -208,6 +206,11 @@ class Branch(object):
 
     def __hash__(self):
         return hash(self.branch_num)
+
+    @property
+    def node_current_in(self):
+        if self.nodelist:
+            return self.nodelist[-1]
 
     def add_node(self, node):
         """
@@ -248,7 +251,7 @@ class Branch(object):
             return
         self.component_list.append(comp)
         comp.branch = self
-        comp.orientation = comp.high_node(self.node_current_in)
+        comp.node_current_in = comp.high_node(self.node_current_in)
         return comp
 
 
@@ -441,8 +444,10 @@ class Circuit(object):
         :return:
         """
         for res in only_resistances(self.component_list):
-            res.branch.current = res.voltage/res.z
-            res.branch.node_current_in = res.pos
+            if res.node_current_in == res.pos:
+                res.branch.current = res.voltage/res.z
+            elif res.node_current_in == res.neg:
+                res.branch.current = -res.voltage/res.z
 
     # TODO add another func for KCL but in terms of sympy equations where it can generate many sympy
 
