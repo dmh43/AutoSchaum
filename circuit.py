@@ -95,9 +95,15 @@ class Node(object):
         if self.kcl_is_easy():
             kcl_eq_RHS = self.undefined_current_branches()[0]
             known_current_branches = list(set(self.branchlist) - set([kcl_eq_RHS]))
-            kcl_eq_LHS = reduce(lambda running_sum,branch: running_sum + branch.current, known_current_branches, 0)
-            kcl_eq_RHS.current = kcl_eq_LHS
+            current_leaving_node = 0
+            for branch in known_current_branches:
+                if branch.node_current_in == self:
+                    current_leaving_node += branch.current
+                else:
+                    current_leaving_node -= branch.current
+            kcl_eq_RHS.current = current_leaving_node
 
+# TODO write a function for flipping the current direction using the node_current_in
 
 # TODO determine easy currents
 # TODO write function to go back and forth until all easy ones are found
