@@ -105,6 +105,9 @@ class Node(object):
 
 # TODO write a function for flipping the current direction using the node_current_in
 
+# TODO test component currents
+# TODO filter out weird TODOs
+
 # TODO determine easy currents
 # TODO write function to go back and forth until all easy ones are found
 # TODO generate equations for node voltage analysis
