@@ -13,7 +13,9 @@ class Component(object):
         self.nodes = nodes
         self.refdes = name
         self.branch = None
-        self.orientation = None
+        self.node_current_in = None
+        """:type : circuit.Node"""
+        # node_current_in gives node where current enters (passive sign convention)
 
     @property
     def neg(self):
@@ -49,8 +51,10 @@ class Component(object):
         # TODO this method makes it apparent that a Current class would be helpful since you want direction and magnitude
         if self.has_branch():
             if self.branch.current_is_defined():
-                # TODO modify for directionalirty of branch
-                return self.branch.current
+                if self.pos == self.node_current_in:  #if the positive node is where current enters (passive sign convention)
+                    return self.branch.current
+                elif self.neg == self.node_current_in:
+                    return -self.branch.current  # flip if self.pos is away from the current entry of the branch
         else:
             return
 
@@ -80,6 +84,28 @@ class Component(object):
             return True
         else:
             return False
+
+    def high_node(self, ref_node):
+        """
+        given a component, returns the node (pos or neg) closest to ref node in a branch
+        This tells you the directionality of the comp in the branch
+        """
+        node1 = self.pos
+        node2 = self.neg
+        if node1 == ref_node:
+            return node1
+        elif node2 == ref_node:
+            return node2
+        first_cursor = circuit.Cursor(node1)
+        second_cursor = circuit.Cursor(node2)
+        while (first_cursor.location != ref_node and
+               second_cursor.location != ref_node):
+            first_cursor.step_forward_away(node2)
+            second_cursor.step_forward_away(node1)
+        if first_cursor.location == ref_node:
+            return node1
+        else:
+            return node2
 
 class Impedance(Component):
     def __init__(self, real, reactive, nodes, name):

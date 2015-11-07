@@ -192,6 +192,8 @@ class Branch(object):
         """:type : Supernode"""
         self.current = None
         """:type : complex"""
+        self.node_current_in = None
+        """:type : Node"""
 
     def __eq__(self, other_branch):
         """
@@ -206,17 +208,6 @@ class Branch(object):
 
     def __hash__(self):
         return hash(self.branch_num)
-
-    @property
-    def node_current_in(self):
-        """
-        Returns the node at which the defined current enters the branch
-        :return:
-        """
-        if self.nodelist:
-            return self.nodelist[0]
-        else:
-            return
 
     def add_node(self, node):
         """
@@ -257,7 +248,7 @@ class Branch(object):
             return
         self.component_list.append(comp)
         comp.branch = self
-        comp. = high_node(comp, self.node_current_in)
+        comp.orientation = comp.high_node(self.node_current_in)
         return comp
 
 
@@ -445,11 +436,13 @@ class Circuit(object):
         """
         Defines the curent through the branch each resistor is in, in the direction going into the
         positive node of each resistor
+        Also marks the node where the current enters the branch
         This is consistent with passive sign convention for that resistor
         :return:
         """
         for res in only_resistances(self.component_list):
             res.branch.current = res.voltage/res.z
+            res.branch.node_current_in = res.pos
 
     # TODO add another func for KCL but in terms of sympy equations where it can generate many sympy
 
