@@ -396,6 +396,9 @@ class Circuit(object):
                 if new_branch not in self.branchlist:
                     if new_branch.component_list:  #if not empty
                         self.branchlist.append(new_branch)
+                    else:
+                        for undo_node in new_branch.nodelist:
+                            undo_node.branchlist.pop()  # TODO oh... this is ugly. fix it. plz
                 else:
                     for undo_node in new_branch.nodelist:
                         undo_node.branchlist.pop()  # TODO oh... this is ugly. fix it. plz
