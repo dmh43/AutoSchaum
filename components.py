@@ -23,7 +23,7 @@ class Component(object):
         :rtype: circuit.Node
         :return:
         """
-        return self.nodes[1]
+        return self.nodes[0]
 
     @property
     def pos(self):
@@ -31,7 +31,7 @@ class Component(object):
         :rtype: circuit.Node
         :return:
         """
-        return self.nodes[0]
+        return self.nodes[1]
 
     @property
     def voltage(self):
@@ -110,7 +110,7 @@ class Component(object):
 class Impedance(Component):
     def __init__(self, real, reactive, nodes, name):
         """
-        nodes should be in the form (pos_node, neg_node)
+        nodes should be in the form (neg_node, pos_node)
         """
         self.z = complex(real, reactive)
         self.y = 1/self.z

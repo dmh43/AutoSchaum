@@ -25,7 +25,8 @@ define ground so that it matches your solution
 solve symbolically then evaluate
 """
 
-ohms = circuit.Circuit('text')
+#ohms = circuit.Circuit('text')
+ohms = circuit.Circuit('my_circuit')
 ohms.create_nodes()
 ohms.populate_nodes()
 ohms.calc_admittance_matrix()
@@ -42,5 +43,6 @@ ohms.kcl_everywhere()
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)
-print(ohms.numerators)
-print(ohms.denomenators)
+ohms.printer()
+#print(ohms.numerators)
+#print(ohms.denomenators)

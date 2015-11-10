@@ -108,7 +108,6 @@ class Node(object):
 # TODO test component currents
 # TODO filter out weird TODOs
 
-# TODO determine easy currents
 # TODO write function to go back and forth until all easy ones are found
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
@@ -388,17 +387,10 @@ class Circuit(object):
     def create_branches(self):
         if len(self.nontrivial_nodedict.values()) == 0:
             current_branch = Branch()
-            current_branch.component_list = self.component_list
             for node in self.nodedict.values():
                 current_branch.add_node(node)
-            for comp in current_branch.component_list:
-                if comp.has_branch():
-                    continue  # TODO this is repeated code. make into function
-                else:
-                    comp.branch = current_branch
-                    if current_branch not in self.branchlist:
-                        self.branchlist.append(current_branch)
-            return
+            for comp in self.component_list:
+                current_branch.add_comp(comp)
         for node in self.nontrivial_nodedict.values():
             if not only_branchless(node.connected_comps):  # if all conncomps have branches
                 # TODO maybe wrap in a function^
@@ -483,6 +475,12 @@ class Circuit(object):
     def kcl_everywhere(self):
         for node in self.nontrivial_nodedict.values():
             node.solve_kcl()
+
+    def printer(self):
+        for node in self.nodedict.values():
+            print("Node {0} is at {1} V".format(node.node_num, node.voltage))
+        for comp in self.component_list:
+            print("Current through {0} is {1} A".format(comp.refdes, comp.current))
 
     def calc_admittance_matrix(self):
         self.ym = [[complex(0, 0) for i in range(self.num_nodes)] for j in range(self.num_nodes)]
