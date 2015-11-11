@@ -109,12 +109,29 @@ class Node(object):
             return current_leaving_node
         else:
             for branch in self.branchlist:
-                branch_components = []
+                branch_impedances = []
+                branch_voltages = []
                 kcl_cursor = KCLCursor(branch, self)
+                if branch.node_current_in == self: flip_direction = False  # in same direction as branch current?
+                else: flip_direction = True
                 while True:
-                    branch_components.extend(kcl_cursor.step_down_branch())
+                    new_comp = kcl_cursor.step_down_branch()
+                    if isinstance(new_comp, components.Resistor):
+                        branch_impedances.append(new_comp)
+                    if isinstance(new_comp, components.VoltageSource):
+                        if new_comp.neg == kcl_cursor.location:
+                            directionality = 1  # the factor to multiply by the source voltage to compensate for directionality
+                        else:
+                            directionality = -1
+                        branch_voltages.append(VoltageExp(new_comp, directionality))
                     if kcl_cursor.at_branch_end():
+                        branch_voltages.append(VoltageExp(kcl_cursor.location))  # we interperate this as a voltage to gnd
                         break
+                current_leaving_node.append()
+                if flip_direction:
+                    for voltage in branch_voltages:
+
+                branch.current_expression = [branch_impedances, branch_voltages]  # TODO maybe this should go inside the Current class
 
 # TODO write a function for flipping the current direction using the node_current_in
 
@@ -212,6 +229,8 @@ class Branch(object):
         """:type : Supernode"""
         self.current = None
         """:type : complex"""
+        self.current_expression = None
+        """Ultimately, this value should be summed for both impedance and voltages and then take z/v"""
 
     def __eq__(self, other_branch):
         """
@@ -715,4 +734,19 @@ class BranchCreatorCursor(Cursor):
     def step_along_branch(self):
         return super(BranchCreatorCursor, self).step_along_branch()
 
+
+class Direction(object):
+    """I dont know if this will actually be useful"""
+    pass
+
+
+class VoltageExp(Direction):
+    def __init__(self, v_source_or_node, dir_encountered=1):
+        self.voltage = v_source_or_node
+        self.direction = dir_encountered
+
+
+class CurrentExp(Direction):
+    def __init__(self):
+        pass
 
