@@ -22,7 +22,7 @@
     <favorites_list name="AutoSchaum" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.23308958">
+    <splitter split-orientation="horizontal" split-proportion="0.30530164">
       <split-first>
         <leaf>
           <file leaf-file-name="main.py" pinned="false" current-in-tab="false">
@@ -50,8 +50,8 @@
           <file leaf-file-name="circuit.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/circuit.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.59731543">
-                  <caret line="743" column="57" selection-start-line="743" selection-start-column="57" selection-end-line="743" selection-end-column="57" />
+                <state vertical-scroll-proportion="0.81208056">
+                  <caret line="756" column="47" selection-start-line="756" selection-start-column="47" selection-end-line="756" selection-end-column="47" />
                   <folding>
                     <element signature="e#798#815#0" expanded="true" />
                   </folding>
@@ -78,8 +78,8 @@
           <file leaf-file-name="circuit.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/circuit.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.6812081">
-                  <caret line="127" column="77" selection-start-line="127" selection-start-column="77" selection-end-line="127" selection-end-column="77" />
+                <state vertical-scroll-proportion="0.8422819">
+                  <caret line="133" column="89" selection-start-line="133" selection-start-column="89" selection-end-line="133" selection-end-column="89" />
                   <folding>
                     <element signature="e#798#815#0" expanded="true" />
                   </folding>
@@ -958,8 +958,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/circuit.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.6812081">
-          <caret line="127" column="77" selection-start-line="127" selection-start-column="77" selection-end-line="127" selection-end-column="77" />
+        <state vertical-scroll-proportion="0.8422819">
+          <caret line="133" column="89" selection-start-line="133" selection-start-column="89" selection-end-line="133" selection-end-column="89" />
           <folding>
             <element signature="e#798#815#0" expanded="true" />
           </folding>

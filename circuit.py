@@ -123,15 +123,15 @@ class Node(object):
                             directionality = 1  # the factor to multiply by the source voltage to compensate for directionality
                         else:
                             directionality = -1
-                        branch_voltages.append(VoltageExp(new_comp, directionality))
+                        branch_voltages.append(Voltage(new_comp, directionality))
                     if kcl_cursor.at_branch_end():
-                        branch_voltages.append(VoltageExp(kcl_cursor.location))  # we interperate this as a voltage to gnd
+                        branch_voltages.append(Voltage(kcl_cursor.location))  # we interperate this as a voltage to gnd
                         break
-                current_leaving_node.append()
+                current_leaving_node.append(CurrentExp(branch_voltages, branch_impedances))
                 if flip_direction:
                     for voltage in branch_voltages:
-
-                branch.current_expression = [branch_impedances, branch_voltages]  # TODO maybe this should go inside the Current class
+                        voltage.direction *= -1
+                branch.current_expression = CurrentExp(branch_voltages, branch_impedances)
 
 # TODO write a function for flipping the current direction using the node_current_in
 
@@ -740,13 +740,22 @@ class Direction(object):
     pass
 
 
-class VoltageExp(Direction):
+class Voltage(Direction):
     def __init__(self, v_source_or_node, dir_encountered=1):
         self.voltage = v_source_or_node
         self.direction = dir_encountered
 
+    def into_sympy(self):
+        pass
+
 
 class CurrentExp(Direction):
-    def __init__(self):
+    def __init__(self, voltages, impedances):
+        self.voltage = voltages
+        """:type : list[Voltage]"""
+        self.impedances = impedances
+        """:type : list[components.Impedance]"""
+
+    def into_sympy(self):
         pass
 
