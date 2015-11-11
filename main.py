@@ -6,6 +6,7 @@ if __hand_drawn:
 #import SchemDraw as schem
 #import SchemDraw.elements as e
 import circuit
+import components
 
 # d = schem.Drawing(fontsize=10)
 # V1 = d.add(e.SOURCE_V, label='$V_1$=10V')
@@ -35,8 +36,12 @@ ohms.create_branches()
 ohms.create_supernodes()
 ohms.sub_super_nodes()
 ohms.define_reference_voltage()
+print("First choose a reference voltage (ground node):\nNode {0} is ref at 0V".format(ohms.ref.node_num))
+print("Now, for each voltage source connected to this reference, it is easy to determine the voltage at the opposite node")
 ohms.identify_voltages()
+print("With this information, we can calculate the current through each resistive branch across which the voltage is known:")
 ohms.identify_currents()
+print("Performing KCL at each of the nodes in the circuit:")
 ohms.kcl_everywhere()
 #ohms.ohms_law_where_easy()
 #ohms.gen_node_voltage_eq()

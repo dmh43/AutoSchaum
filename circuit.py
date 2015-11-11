@@ -92,23 +92,35 @@ class Node(object):
         return filter(lambda branch: not branch.current_is_defined(), self.branchlist)
 
     def solve_kcl(self):
+        """
+        Creates the KCL equations for the node. If it can be solved then it sets the current through that branch
+        :return: Returns a list containing the expressions for the currents leaving the node
+        """
+        current_leaving_node = []
         if self.kcl_is_easy():
-            kcl_eq_RHS = self.undefined_current_branches()[0]
-            known_current_branches = list(set(self.branchlist) - set([kcl_eq_RHS]))
-            current_leaving_node = 0
+            unknown_branch_current = self.undefined_current_branches()[0]
+            known_current_branches = list(set(self.branchlist) - set([unknown_branch_current]))
             for branch in known_current_branches:
                 if branch.node_current_in == self:
-                    current_leaving_node += branch.current
+                    current_leaving_node.append(branch.current)
                 else:
-                    current_leaving_node -= branch.current
-            kcl_eq_RHS.current = current_leaving_node
+                    current_leaving_node.append(-branch.current)
+            unknown_branch_current.current = sum(current_leaving_node)
+            return current_leaving_node
+        else:
+            for branch in self.branchlist:
+                branch_components = []
+                kcl_cursor = KCLCursor(branch, self)
+                while True:
+                    branch_components.extend(kcl_cursor.step_down_branch())
+                    if kcl_cursor.at_branch_end():
+                        break
 
 # TODO write a function for flipping the current direction using the node_current_in
 
 # TODO test component currents
-# TODO filter out weird TODOs
 
-# TODO write function to go back and forth until all easy ones are found
+# TODO write function to go back and forth until all easy ones are found, explaining along the way
 # TODO generate equations for node voltage analysis
 # TODO solve equations with sympy
 
@@ -649,6 +661,27 @@ class Cursor(object):
         # TODO change this and other similar functions to call a parent fun which has variable isntead of 0
         next_node_choices = [direc for direc in self.directions() if direc != node]
         return self.step_to(next_node_choices[0])
+
+
+class KCLCursor(Cursor):
+    """
+    This class is used to easily step down branches when performing KCL at a node
+    """
+    def __init__(self, branch, start_node):
+        """
+        :type start_node: Node
+        :type branch: Branch
+        """
+        super(KCLCursor, self).__init__(start_node)
+        self.branch = branch
+
+    def step_down_branch(self):
+        for comp in self.location.connected_comps:
+            if self.location in comp.nodes:
+                component_to_jump_over = comp
+                break
+        destination = other_node(component_to_jump_over, self.location)
+        return self.step_to(destination)
 
 
 class BranchCreatorCursor(Cursor):
