@@ -95,6 +95,7 @@ class Node(object):
         """
         Creates the KCL equations for the node. If it can be solved then it sets the current through that branch
         :return: Returns a list containing the expressions for the currents leaving the node
+        :rtype: list[CurrentExp]
         """
         current_leaving_node = []
         if self.kcl_is_easy():
@@ -326,6 +327,8 @@ class Circuit(object):
         """:type : dict[int, Node]"""
         self.reduced_nodedict = {}
         """:type : dict[int, Node]"""
+        self.non_trivial_reduced_nodedict = {}
+        """:type : dict[int, Node]"""
         self.component_list = []
         """:type : [components.Component]"""
         self.supernode_list = []
@@ -343,6 +346,9 @@ class Circuit(object):
         self.numerators = []
         self.denomenators = []
         self.solved_is = False
+        self.node_voltage_eqs_str = []
+        """:type : list[str]"""
+        self.node_voltage_eqs = []
 
     def create_nodes(self):
         """
@@ -418,6 +424,11 @@ class Circuit(object):
             if node.num_comp_connected > 2:
                 self.nontrivial_nodedict[node.node_num] = node
 
+    def identify_nontrivial_nonsuper_nodes(self):
+        for node in self.reduced_nodedict.values():
+            if node.num_comp_connected > 2:
+                self.non_trivial_reduced_nodedict[node.node_num] = node
+
     def create_branches(self):
         if len(self.nontrivial_nodedict.values()) == 0:
             current_branch = Branch()
@@ -491,10 +502,12 @@ class Circuit(object):
         :rtype: list[str]
         :return: list of strings to be sympified into sympy expressions
         """
-        for node in list(set(self.reduced_nodedict.values()) - set([self.ref])):
+        for node in list(set(self.non_trivial_reduced_nodedict.values()) - set([self.ref])):
             current_exps = node.solve_kcl()
             for exp in current_exps:
-                exp.into_sypy()
+                exp.into_str()
+            self.node_voltage_eqs_str.append("+".join([exp.str_expr for exp in current_exps]))
+            self.node_voltage_eqs.append(sympy.sympify(self.node_voltage_eqs_str[-1]))
 
     def kcl_everywhere(self):
         for node in self.nontrivial_nodedict.values():
@@ -690,7 +703,7 @@ class KCLCursor(Cursor):
 
     def step_down_branch(self):
         for comp in self.branch.component_list:
-            if self.location in comp.nodes:
+            if ((self.location in comp.nodes) and (comp not in self.components_seen)):
                 component_to_jump_over = comp
                 break
         destination = other_node(component_to_jump_over, self.location)
@@ -754,16 +767,27 @@ class CurrentExp(Direction):
         """:type : list[Voltage]"""
         self.impedances = impedances
         """:type : list[components.Impedance]"""
-        self.sympy_expr = Node
+        self.denominator = ""
+        """:type : str"""
+        self.numerator = ""
+        """:type : str"""
+        self.str_expr = None
+        """:type : str"""
+        self.sympy_expr = None
 
-    def into_sympy(self):
+    def into_str(self):
         numerator = "(V{0}".format(self.voltages[0].voltage.node_num)
-        for emf in self.voltages[:-1]:
+        for emf in self.voltages[1:-1]:
             numerator += "-" + emf.voltage.refdes
         numerator += "- V{0})/".format(self.voltages[-1].voltage.node_num)
         denom = "("
         for impedance in self.impedances:
-            denom += impedance.refdes
+            denom += "+" + impedance.refdes
         denom += ")"
-        self.sympy_expr = sympy.sympify(numerator+denom)
-        return self.sympy_expr
+        self.numerator = numerator
+        self.denominator = denom
+        self.str_expr = numerator+denom
+        return self.str_expr
+
+    def into_sympy(self):
+        self.sympy_expr = sympy.sympify(self.str_expr)
