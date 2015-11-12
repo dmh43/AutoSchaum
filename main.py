@@ -27,7 +27,8 @@ solve symbolically then evaluate
 """
 
 #ohms = circuit.Circuit('text')
-ohms = circuit.Circuit('my_circuit')
+#ohms = circuit.Circuit('my_circuit')
+ohms = circuit.Circuit('node_voltage')
 ohms.create_nodes()
 ohms.populate_nodes()
 ohms.calc_admittance_matrix()

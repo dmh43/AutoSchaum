@@ -110,12 +110,12 @@ class Node(object):
         else:
             for branch in self.branchlist:
                 branch_impedances = []
-                branch_voltages = []
+                branch_voltages = [Voltage(self)]
                 kcl_cursor = KCLCursor(branch, self)
                 if branch.node_current_in == self: flip_direction = False  # in same direction as branch current?
                 else: flip_direction = True
                 while True:
-                    new_comp = kcl_cursor.step_down_branch()
+                    new_comp = kcl_cursor.step_down_branch()[0]  #assuming only one component
                     if isinstance(new_comp, components.Resistor):
                         branch_impedances.append(new_comp)
                     if isinstance(new_comp, components.VoltageSource):
@@ -129,9 +129,10 @@ class Node(object):
                         break
                 current_leaving_node.append(CurrentExp(branch_voltages, branch_impedances))
                 if flip_direction:
-                    for voltage in branch_voltages:
+                    for voltage in branch_voltages[1:-1]:  # for all but the start and ending nodes
                         voltage.direction *= -1
                 branch.current_expression = CurrentExp(branch_voltages, branch_impedances)
+                branch.current = branch.current_expression.into_sympy()
 
 # TODO write a function for flipping the current direction using the node_current_in
 
@@ -218,6 +219,7 @@ class Branch(object):
     :type branch_num: int
     """
     _num_branches = itertools.count(0)
+    # TODO fix branch numbering
 
     def __init__(self):
         self.nodelist = []
@@ -230,7 +232,7 @@ class Branch(object):
         self.current = None
         """:type : complex"""
         self.current_expression = None
-        """Ultimately, this value should be summed for both impedance and voltages and then take z/v"""
+        """Ultimately, this value should be summed for impedance and va - v1 -v2... for voltages and then take z/v"""
 
     def __eq__(self, other_branch):
         """
@@ -695,7 +697,7 @@ class KCLCursor(Cursor):
         self.branch = branch
 
     def step_down_branch(self):
-        for comp in self.location.connected_comps:
+        for comp in self.branch.component_list:
             if self.location in comp.nodes:
                 component_to_jump_over = comp
                 break
