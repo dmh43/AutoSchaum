@@ -124,7 +124,7 @@ class Node(object):
                         else:
                             directionality = -1
                         branch_voltages.append(Voltage(new_comp, directionality))
-                    if kcl_cursor.at_branch_end():
+                    if kcl_cursor.at_branch_end:
                         branch_voltages.append(Voltage(kcl_cursor.location))  # we interperate this as a voltage to gnd
                         break
                 current_leaving_node.append(CurrentExp(branch_voltages, branch_impedances))
@@ -133,6 +133,7 @@ class Node(object):
                         voltage.direction *= -1
                 branch.current_expression = CurrentExp(branch_voltages, branch_impedances)
                 branch.current = branch.current_expression.into_sympy()
+            return current_leaving_node
 
 # TODO write a function for flipping the current direction using the node_current_in
 
@@ -490,20 +491,10 @@ class Circuit(object):
         :rtype: list[str]
         :return: list of strings to be sympified into sympy expressions
         """
-        # TODO finish this!
         for node in list(set(self.reduced_nodedict.values()) - set([self.ref])):
-            for branch in node.branchlist:
-                self.numerators.append([node])
-                self.denomenators.append([0])
-                for comp in branch.component_list:
-                    if isinstance(comp, components.VoltageSource):
-                        self.numerators[-1].extend(["-", comp])
-                    elif isinstance(comp, components.Resistor):
-                        self.denomenators[-1].append([comp])
-                    if comp.pos != node and comp.pos in self.reduced_nodedict.values():  # reached end of branch?
-                        self.numerators[-1].extend(["-", comp.pos])
-                    if comp.neg != node and comp.neg in self.reduced_nodedict.values():
-                        self.numerators[-1].extend(["-", comp.neg])
+            current_exps = node.solve_kcl()
+            for exp in current_exps:
+                exp.into_sypy()
 
     def kcl_everywhere(self):
         for node in self.nontrivial_nodedict.values():
@@ -669,8 +660,9 @@ class Cursor(object):
         """
         return self.step_along(self.new_directions()[0])
 
+    @property
     def at_branch_end(self):
-        if self.directions() > 2:
+        if len(self.directions()) > 2:
             return True
         else:
             return False
@@ -752,12 +744,26 @@ class Voltage(Direction):
 
 
 class CurrentExp(Direction):
-    def __init__(self, voltages, impedances):
-        self.voltage = voltages
+    def __init__(self, voltage_list, impedances):
+        """
+        :param voltages: Voltages in the form: Start Node, Vsource encountered..., End Node
+        :param impedances:
+        :return:
+        """
+        self.voltages = voltage_list
         """:type : list[Voltage]"""
         self.impedances = impedances
         """:type : list[components.Impedance]"""
+        self.sympy_expr = Node
 
     def into_sympy(self):
-        pass
-
+        numerator = "(V{0}".format(self.voltages[0].voltage.node_num)
+        for emf in self.voltages[:-1]:
+            numerator += "-" + emf.voltage.refdes
+        numerator += "- V{0})/".format(self.voltages[-1].voltage.node_num)
+        denom = "("
+        for impedance in self.impedances:
+            denom += impedance.refdes
+        denom += ")"
+        self.sympy_expr = sympy.sympify(numerator+denom)
+        return self.sympy_expr
