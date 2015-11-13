@@ -141,8 +141,9 @@ class Node(object):
 # TODO test component currents
 
 # TODO write function to go back and forth until all easy ones are found, explaining along the way
-# TODO generate equations for node voltage analysis
+# TODO equations for supernodes!!
 # TODO solve equations with sympy
+# TODO print equations and solutions
 
 # TODO for jesus de christo adopt a consistent naming convention
 # TODO dependent voltage sources
@@ -349,6 +350,10 @@ class Circuit(object):
         self.node_voltage_eqs_str = []
         """:type : list[str]"""
         self.node_voltage_eqs = []
+        self.subbed_eqs = []
+        self.solved_eq = None
+        self.node_vars = []
+        self.known_vars = []
 
     def create_nodes(self):
         """
@@ -508,6 +513,23 @@ class Circuit(object):
                 exp.into_str()
             self.node_voltage_eqs_str.append("+".join([exp.str_expr for exp in current_exps]))
             self.node_voltage_eqs.append(sympy.sympify(self.node_voltage_eqs_str[-1]))
+            if not node.voltage_is_defined():
+                self.node_vars.append(sympy.Symbol("V{0}".format(node.node_num)))
+            else:
+                self.known_vars.append((sympy.Symbol("V{0}".format(node.node_num), node.voltage)))
+
+    # TODO circuit equations should be a class with progression
+
+    def sub_into_eqs(self):
+        for impedance in [imp for imp in self.component_list if isinstance(imp, components.Impedance)]:
+            self.known_vars.append(("R{0}".format(impedance.refdes), impedance.z))  #TODO fix name for other impedances
+        self.known_vars.append(("V0", self.ref))  # TODO should be a class for this
+        for eq in self.node_voltage_eqs:
+            for known_var in self.known_vars:
+                self.subbed_eqs.append(eq.subs(*known_var))
+
+    def solve_eqs(self):
+        self.solved_eq = sympy.solve(self.node_voltage_eqs, self.node_vars)
 
     def kcl_everywhere(self):
         for node in self.nontrivial_nodedict.values():

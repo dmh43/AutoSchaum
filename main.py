@@ -7,6 +7,7 @@ if __hand_drawn:
 #import SchemDraw.elements as e
 import circuit
 import components
+import sympy
 
 # d = schem.Drawing(fontsize=10)
 # V1 = d.add(e.SOURCE_V, label='$V_1$=10V')
@@ -48,6 +49,9 @@ print("Performing KCL at each of the nodes in the circuit:")
 #ohms.kcl_everywhere()
 #ohms.ohms_law_where_easy()
 ohms.gen_node_voltage_eq()
+ohms.solve_eqs()
+ohms.solved_eq
+ohms.sub_into_eqs()
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)
