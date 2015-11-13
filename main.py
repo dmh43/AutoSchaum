@@ -50,8 +50,10 @@ print("Performing KCL at each of the nodes in the circuit:")
 #ohms.ohms_law_where_easy()
 ohms.gen_node_voltage_eq()
 ohms.solve_eqs()
-ohms.solved_eq
 ohms.sub_into_eqs()
+ohms.solved_eq
+ohms.sub_into_result()
+ohms.result
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)

@@ -354,6 +354,7 @@ class Circuit(object):
         self.solved_eq = None
         self.node_vars = []
         self.known_vars = []
+        self.result = None
 
     def create_nodes(self):
         """
@@ -521,12 +522,16 @@ class Circuit(object):
     # TODO circuit equations should be a class with progression
 
     def sub_into_eqs(self):
-        for impedance in [imp for imp in self.component_list if isinstance(imp, components.Impedance)]:
-            self.known_vars.append(("R{0}".format(impedance.refdes), impedance.z))  #TODO fix name for other impedances
-        self.known_vars.append(("V0", self.ref))  # TODO should be a class for this
+        for impedance in [imp for imp in self.component_list if isinstance(imp, components.Impedance)]:  # TODO move into another funfction
+            self.known_vars.append(("{0}".format(impedance.refdes), impedance.z))
+        self.known_vars.append(("V0", self.ref.voltage))  # TODO should be a class for this
         for eq in self.node_voltage_eqs:
-            for known_var in self.known_vars:
-                self.subbed_eqs.append(eq.subs(*known_var))
+            self.subbed_eqs.append(eq.subs(self.known_vars))
+
+    #TODO group these two together to sub into an arbitrary expression after evaluating known vars
+
+    def sub_into_result(self):
+        self.result = self.solved_eq.subs(self.known_vars)
 
     def solve_eqs(self):
         self.solved_eq = sympy.solve(self.node_voltage_eqs, self.node_vars)
