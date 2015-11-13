@@ -354,7 +354,7 @@ class Circuit(object):
         self.solved_eq = None
         self.node_vars = []
         self.known_vars = []
-        self.result = None
+        self.result = []
 
     def create_nodes(self):
         """
@@ -514,24 +514,31 @@ class Circuit(object):
                 exp.into_str()
             self.node_voltage_eqs_str.append("+".join([exp.str_expr for exp in current_exps]))
             self.node_voltage_eqs.append(sympy.sympify(self.node_voltage_eqs_str[-1]))
-            if not node.voltage_is_defined():
-                self.node_vars.append(sympy.Symbol("V{0}".format(node.node_num)))
-            else:
-                self.known_vars.append((sympy.Symbol("V{0}".format(node.node_num), node.voltage)))
+
 
     # TODO circuit equations should be a class with progression
 
+    def determine_known_vars(self):
+        for node in self.nodedict.values():
+            if not node.voltage_is_defined():
+                self.node_vars.append(sympy.Symbol("V{0}".format(node.node_num)))
+            else:
+                self.known_vars.append((sympy.Symbol("V{0}".format(node.node_num)), node.voltage))
+        for comp in self.component_list:
+            if isinstance(comp, components.Impedance):
+                self.known_vars.append(("{0}".format(comp.refdes), comp.z))
+            elif isinstance(comp, components.VoltageSource):
+                self.known_vars.append(("{0}".format(comp.refdes), comp.v))
+
     def sub_into_eqs(self):
-        for impedance in [imp for imp in self.component_list if isinstance(imp, components.Impedance)]:  # TODO move into another funfction
-            self.known_vars.append(("{0}".format(impedance.refdes), impedance.z))
-        self.known_vars.append(("V0", self.ref.voltage))  # TODO should be a class for this
         for eq in self.node_voltage_eqs:
             self.subbed_eqs.append(eq.subs(self.known_vars))
 
     #TODO group these two together to sub into an arbitrary expression after evaluating known vars
 
     def sub_into_result(self):
-        self.result = self.solved_eq.subs(self.known_vars)
+        for eq in self.solved_eq.values():
+            self.result.append(eq.subs(self.known_vars))
 
     def solve_eqs(self):
         self.solved_eq = sympy.solve(self.node_voltage_eqs, self.node_vars)
