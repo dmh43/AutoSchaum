@@ -26,6 +26,7 @@ import math
 import cmath
 import itertools
 import sympy
+import copy
 
 
 class Node(object):
@@ -91,49 +92,70 @@ class Node(object):
     def undefined_current_branches(self):
         return filter(lambda branch: not branch.current_is_defined(), self.branchlist)
 
-    def solve_kcl(self):
+    def numeric_kcl(self):
         """
-        Creates the KCL equations for the node. If it can be solved then it sets the current through that branch
+        performs kcl at a node if all the connected branches except one have defined current values and sets
+        the current at the unknown branch. Otherwise raise an exception
+        :return:
+        """
+        if not self.kcl_is_easy():
+            raise Exception('KCL is not easy at node {0}'.format(self.node_num))
+        current_leaving_node = []
+        unknown_branch_current = self.undefined_current_branches()[0]
+        known_current_branches = list(set(self.branchlist) - set([unknown_branch_current]))
+        for branch in known_current_branches:
+            if branch.node_current_in == self:
+                current_leaving_node.append(branch.current)
+            else:
+                current_leaving_node.append(-branch.current)
+        unknown_branch_current.current = sum(current_leaving_node)
+        return current_leaving_node
+
+    def node_voltage_kcl(self):
+        """
+        Creates the KCL equations for node analysis and sets the current expression, current exps string and sympy eqs
+        for that branch
         :return: Returns a list containing the expressions for the currents leaving the node
         :rtype: list[CurrentExp]
         """
         current_leaving_node = []
-        if self.kcl_is_easy():
-            unknown_branch_current = self.undefined_current_branches()[0]
-            known_current_branches = list(set(self.branchlist) - set([unknown_branch_current]))
-            for branch in known_current_branches:
-                if branch.node_current_in == self:
-                    current_leaving_node.append(branch.current)
+        for branch in self.branchlist:
+            branch_impedances = []
+            branch_voltages = [Voltage(self)]
+            kcl_cursor = KCLCursor(branch, self)
+            if branch.node_current_in == self: flip_direction = False  # in same direction as branch current?
+            else: flip_direction = True
+            if branch.current_is_defined():
+                if flip_direction:
+                    current_leaving_node.append(-1*branch.current)
                 else:
-                    current_leaving_node.append(-branch.current)
-            unknown_branch_current.current = sum(current_leaving_node)
-            return current_leaving_node
-        else:
-            for branch in self.branchlist:
-                branch_impedances = []
-                branch_voltages = [Voltage(self)]
-                kcl_cursor = KCLCursor(branch, self)
-                if branch.node_current_in == self: flip_direction = False  # in same direction as branch current?
-                else: flip_direction = True
-                while True:
-                    new_comp = kcl_cursor.step_down_branch()[0]  #assuming only one component
-                    if isinstance(new_comp, components.Resistor):
-                        branch_impedances.append(new_comp)
-                    if isinstance(new_comp, components.VoltageSource):
-                        directionality = 1
-                        if new_comp.neg != kcl_cursor.location:
-                            directionality = -1  # the factor to multiply by the source voltage to compensate for directionality
-                        branch_voltages.append(Voltage(new_comp, directionality))
-                    if kcl_cursor.at_branch_end:
-                        branch_voltages.append(Voltage(kcl_cursor.location))  # we interperate this as a voltage to gnd
-                        break
-                current_leaving_node.append(CurrentExp(branch_voltages, branch_impedances))
-                # if flip_direction:  # TODO implement current for branch. be sure to copy voltage exps!! they are mutable!!
-                #     for voltage in branch_voltages[1:-1]:  # for all but the start and ending nodes
-                #         voltage.direction *= -1
-                # branch.current_expression = CurrentExp(branch_voltages, branch_impedances)
-                # branch.current = branch.current_expression.into_sympy()
-            return current_leaving_node
+                    current_leaving_node.append(branch.current)
+                continue
+            elif branch.current_exp_is_defined():
+                new_current_exp = copy.deepcopy(branch.current_expression)
+                if flip_direction:
+                    new_current_exp.flip_dir()
+                current_leaving_node.append(new_current_exp)
+                continue
+            while True:
+                new_comp = kcl_cursor.step_down_branch()[0]  #assuming only one component
+                if isinstance(new_comp, components.Resistor):
+                    branch_impedances.append(new_comp)
+                if isinstance(new_comp, components.VoltageSource):
+                    directionality = 1
+                    if new_comp.neg != kcl_cursor.location:
+                        directionality = -1  # the factor to multiply by the source voltage to compensate for directionality
+                    branch_voltages.append(Voltage(new_comp, directionality))
+                if kcl_cursor.at_branch_end:
+                    branch_voltages.append(Voltage(kcl_cursor.location))  # we interperate this as a voltage to gnd
+                    break
+            current_leaving_node.append(CurrentExp(branch_voltages, branch_impedances))
+            branchs_perspective_voltage = copy.deepcopy(branch_voltages)
+            branch.current_expression = CurrentExp(branchs_perspective_voltage, branch_impedances)
+            if flip_direction:
+                branch.current_expression.flip_dir()
+            branch.current = branch.current_expression.into_sympy()
+        return current_leaving_node
 
 # TODO write a function for flipping the current direction using the node_current_in
 
@@ -282,6 +304,12 @@ class Branch(object):
             return True
         else:
             return False
+
+    def current_exp_is_defined(self):
+        if self.current_expression is None:
+            return False
+        else:
+            return True
 
     def add_comp(self, comp):
         """
@@ -508,7 +536,7 @@ class Circuit(object):
         :return: list of strings to be sympified into sympy expressions
         """
         for node in list(set(self.non_trivial_reduced_nodedict.values()) - set([self.ref])):
-            current_exps = node.solve_kcl()
+            current_exps = node.node_voltage_kcl()
             for exp in current_exps:
                 exp.into_str()
             self.node_voltage_eqs_str.append("+".join([exp.str_expr for exp in current_exps]))
@@ -548,7 +576,7 @@ class Circuit(object):
 
     def kcl_everywhere(self):
         for node in self.nontrivial_nodedict.values():
-            node.solve_kcl()
+            node.solve_kcl() # TODO CHANGE THIS NAME
 
     def printer(self):
         for node in self.nodedict.values():
@@ -811,6 +839,10 @@ class CurrentExp(Direction):
         self.str_expr = None
         """:type : str"""
         self.sympy_expr = None
+
+    def flip_dir(self):
+        for emf in self.voltages:
+            emf.direction *= -1
 
     def into_str(self):
         numerator = "(V{0}".format(self.voltages[0].voltage.node_num)

@@ -57,9 +57,10 @@ print sympy.solve(ohms.subbed_eqs, ohms.node_vars)
 #print ohms.solved_eq
 ohms.sub_into_result()
 print ohms.result
-# TODO Debug output...
-# TODO Supernode equations
+# TODO add some neater printing
+# TODO clean up solver. Should be class??
 # TODO Tidy
+# TODO Supernode equations
 # TODO Heroku
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
