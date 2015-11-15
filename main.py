@@ -50,11 +50,17 @@ print("Performing KCL at each of the nodes in the circuit:")
 #ohms.ohms_law_where_easy()
 ohms.gen_node_voltage_eq()
 ohms.determine_known_vars()
-ohms.solve_eqs()
+ohms.sub_zero_for_ref()
+#ohms.solve_eqs()
 #ohms.sub_into_eqs()
-print ohms.solved_eq
+print sympy.solve(ohms.subbed_eqs, ohms.node_vars)
+#print ohms.solved_eq
 ohms.sub_into_result()
 print ohms.result
+# TODO Debug output...
+# TODO Supernode equations
+# TODO Tidy
+# TODO Heroku
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)

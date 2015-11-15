@@ -120,20 +120,19 @@ class Node(object):
                     if isinstance(new_comp, components.Resistor):
                         branch_impedances.append(new_comp)
                     if isinstance(new_comp, components.VoltageSource):
-                        if new_comp.neg == kcl_cursor.location:
-                            directionality = 1  # the factor to multiply by the source voltage to compensate for directionality
-                        else:
-                            directionality = -1
+                        directionality = 1
+                        if new_comp.neg != kcl_cursor.location:
+                            directionality = -1  # the factor to multiply by the source voltage to compensate for directionality
                         branch_voltages.append(Voltage(new_comp, directionality))
                     if kcl_cursor.at_branch_end:
                         branch_voltages.append(Voltage(kcl_cursor.location))  # we interperate this as a voltage to gnd
                         break
                 current_leaving_node.append(CurrentExp(branch_voltages, branch_impedances))
-                if flip_direction:
-                    for voltage in branch_voltages[1:-1]:  # for all but the start and ending nodes
-                        voltage.direction *= -1
-                branch.current_expression = CurrentExp(branch_voltages, branch_impedances)
-                branch.current = branch.current_expression.into_sympy()
+                # if flip_direction:  # TODO implement current for branch. be sure to copy voltage exps!! they are mutable!!
+                #     for voltage in branch_voltages[1:-1]:  # for all but the start and ending nodes
+                #         voltage.direction *= -1
+                # branch.current_expression = CurrentExp(branch_voltages, branch_impedances)
+                # branch.current = branch.current_expression.into_sympy()
             return current_leaving_node
 
 # TODO write a function for flipping the current direction using the node_current_in
@@ -530,6 +529,10 @@ class Circuit(object):
             elif isinstance(comp, components.VoltageSource):
                 self.known_vars.append(("{0}".format(comp.refdes), comp.v))
 
+    def sub_zero_for_ref(self):
+        for eq in self.node_voltage_eqs:
+            self.subbed_eqs.append(eq.subs("V{0}".format(self.ref.node_num), 0))
+
     def sub_into_eqs(self):
         for eq in self.node_voltage_eqs:
             self.subbed_eqs.append(eq.subs(self.known_vars))
@@ -812,6 +815,8 @@ class CurrentExp(Direction):
     def into_str(self):
         numerator = "(V{0}".format(self.voltages[0].voltage.node_num)
         for emf in self.voltages[1:-1]:
+            if emf.direction == -1:
+                numerator += "- "
             numerator += "-" + emf.voltage.refdes
         numerator += "- V{0})/".format(self.voltages[-1].voltage.node_num)
         denom = "("
