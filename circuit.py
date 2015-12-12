@@ -377,21 +377,8 @@ class Circuit(object):
         """:type : list[list[int]]"""
         self.num_nodes = 0
         """:type : int"""
-        self.equations = []
-        """:type : list[str]"""
         self.ref = None
         """:type : Node"""
-        self.numerators = []
-        self.denomenators = []
-        self.solved_is = False
-        self.node_voltage_eqs_str = []
-        """:type : list[str]"""
-        self.node_voltage_eqs = []
-        self.subbed_eqs = []
-        self.solved_eq = None
-        self.node_vars = []
-        self.known_vars = []
-        self.result = []
 
     def load_netlist(self, netlist_file):
         self.netlist = netlist_file.read().split('\n')
@@ -517,84 +504,6 @@ class Circuit(object):
 
 # TODO more general equality method for branches and fix ramifications
 
-    def identify_voltages(self):
-        self.ref.voltage = 0
-        kvl_cursor = Cursor(self.ref)
-        while True:
-            while kvl_cursor.unseen_vsources_connected():  # While not empty
-                first_unseen_source = only_vsources(kvl_cursor.step_down_unseen_vsource())[0] # will only contain a single vsource at most
-                first_unseen_source.set_other_node_voltage()
-            if kvl_cursor.location != self.ref:  # if you're no longer at ref
-                kvl_cursor.step_back()
-            elif not kvl_cursor.unseen_vsources_connected():  # if no more sources and at ref node
-                break
-            else:  # if at ref but more vsources to go then continue
-                continue
-
-    def identify_currents(self):
-        """
-        Defines the curent through the branch each resistor is in, in the direction going into the
-        positive node of each resistor
-        Also marks the node where the current enters the branch
-        This is consistent with passive sign convention for that resistor
-        :return:
-        """
-        for res in only_resistances(self.component_list):
-            if res.node_current_in == res.pos:
-                res.branch.current = res.voltage/res.z
-            elif res.node_current_in == res.neg:
-                res.branch.current = -res.voltage/res.z
-
-    # TODO add another func for KCL but in terms of sympy equations where it can generate many sympy
-
-    def gen_node_voltage_eq(self):
-        """
-        :rtype: list[str]
-        :return: list of strings to be sympified into sympy expressions
-        """
-        for node in list(set(self.non_trivial_reduced_nodedict.values()) - set([self.ref])):
-            current_exps = node.node_voltage_kcl()
-            for exp in current_exps:
-                exp.into_str()
-            self.node_voltage_eqs_str.append("+".join([exp.str_expr for exp in current_exps]))
-            self.node_voltage_eqs.append(sympy.sympify(self.node_voltage_eqs_str[-1]))
-
-
-    # TODO circuit equations should be a class with solving/progression methods
-
-    def determine_known_vars(self):
-        for node in self.nodedict.values():
-            if not node.voltage_is_defined():
-                self.node_vars.append(sympy.Symbol("V{0}".format(node.node_num)))
-            else:
-                self.known_vars.append((sympy.Symbol("V{0}".format(node.node_num)), node.voltage))
-        for comp in self.component_list:
-            if isinstance(comp, components.Impedance):
-                self.known_vars.append(("{0}".format(comp.refdes), comp.z))
-            elif isinstance(comp, components.VoltageSource):
-                self.known_vars.append(("{0}".format(comp.refdes), comp.v))
-
-    def sub_zero_for_ref(self):
-        # TODO make this such that the node num of ref actually chnges
-        for eq in self.node_voltage_eqs:
-            self.subbed_eqs.append(eq.subs("V{0}".format(self.ref.node_num), 0))
-
-    def sub_into_eqs(self):
-        for eq in self.node_voltage_eqs:
-            self.subbed_eqs.append(eq.subs(self.known_vars))
-
-    #TODO group these two together to sub into an arbitrary expression after evaluating known vars
-
-    def sub_into_result(self):
-        for eq in self.solved_eq.values():
-            self.result.append(eq.subs(self.known_vars))
-
-    def solve_eqs(self):
-        self.solved_eq = sympy.solve(self.node_voltage_eqs, self.node_vars)
-
-    def kcl_everywhere(self):
-        for node in self.nontrivial_nodedict.values():
-            node.solve_kcl() # TODO CHANGE THIS NAME
 
     def printer(self):
         for node in self.nodedict.values():
@@ -885,3 +794,107 @@ class Solver(object):
     A Solver contains an unsolved Circuit instance and each step of the solution
     as well as methods solve each step
     """
+    def __init__(self, circuit_to_solve):
+        self.numerators = []
+        self.denomenators = []
+        self.equations = []
+        """:type : list[str]"""
+        self.solved_is = False
+        self.node_voltage_eqs_str = []
+        """:type : list[str]"""
+        self.node_voltage_eqs = []
+        self.subbed_eqs = []
+        self.solved_eq = None
+        self.node_vars = []
+        self.known_vars = []
+        self.result = []
+        self.circuit = circuit_to_solve
+        """:type : Circuit"""
+
+    def identify_voltages(self):
+        self.circuit.ref.voltage = 0
+        kvl_cursor = Cursor(self.circuit.ref)
+        while True:
+            while kvl_cursor.unseen_vsources_connected():  # While not empty
+                first_unseen_source = only_vsources(kvl_cursor.step_down_unseen_vsource())[0] # will only contain a single vsource at most
+                first_unseen_source.set_other_node_voltage()
+            if kvl_cursor.location != self.circuit.ref:  # if you're no longer at ref
+                kvl_cursor.step_back()
+            elif not kvl_cursor.unseen_vsources_connected():  # if no more sources and at ref node
+                break
+            else:  # if at ref but more vsources to go then continue
+                continue
+
+    def identify_currents(self):
+        """
+        Defines the curent through the branch each resistor is in, in the direction going into the
+        positive node of each resistor
+        Also marks the node where the current enters the branch
+        This is consistent with passive sign convention for that resistor
+        :return:
+        """
+        for res in only_resistances(self.circuit.component_list):
+            if res.node_current_in == res.pos:
+                res.branch.current = res.voltage/res.z
+            elif res.node_current_in == res.neg:
+                res.branch.current = -res.voltage/res.z
+
+    # TODO add another func for KCL but in terms of sympy equations where it can generate many sympy
+
+    def gen_node_voltage_eq(self):
+        """
+        :rtype: list[str]
+        :return: list of strings to be sympified into sympy expressions
+        """
+        for node in list(set(self.circuit.non_trivial_reduced_nodedict.values()) - set([self.circuit.ref])):
+            current_exps = node.node_voltage_kcl()
+            for exp in current_exps:
+                exp.into_str()
+            self.node_voltage_eqs_str.append("+".join([exp.str_expr for exp in current_exps]))
+            self.node_voltage_eqs.append(sympy.sympify(self.node_voltage_eqs_str[-1]))
+
+
+    # TODO circuit equations should be a class with solving/progression methods
+
+    def determine_known_vars(self):
+        for node in self.circuit.nodedict.values():
+            if not node.voltage_is_defined():
+                self.node_vars.append(sympy.Symbol("V{0}".format(node.node_num)))
+            else:
+                self.known_vars.append((sympy.Symbol("V{0}".format(node.node_num)), node.voltage))
+        for comp in self.circuit.component_list:
+            if isinstance(comp, components.Impedance):
+                self.known_vars.append(("{0}".format(comp.refdes), comp.z))
+            elif isinstance(comp, components.VoltageSource):
+                self.known_vars.append(("{0}".format(comp.refdes), comp.v))
+
+    def sub_zero_for_ref(self):
+        # TODO make this such that the node num of ref actually chnges
+        for eq in self.node_voltage_eqs:
+            self.subbed_eqs.append(eq.subs("V{0}".format(self.circuit.ref.node_num), 0))
+
+    def sub_into_eqs(self):
+        for eq in self.node_voltage_eqs:
+            self.subbed_eqs.append(eq.subs(self.known_vars))
+
+    #TODO group these two together to sub into an arbitrary expression after evaluating known vars
+
+    def sub_into_result(self):
+        for eq in self.solved_eq.values():
+            self.result.append(eq.subs(self.known_vars))
+
+    def solve_eqs(self):
+        self.solved_eq = sympy.solve(self.node_voltage_eqs, self.node_vars)
+
+    def kcl_everywhere(self):
+        for node in self.circuit.nontrivial_nodedict.values():
+            node.solve_kcl() # TODO CHANGE THIS NAME
+
+
+class Teacher(object):
+    """
+    Teachers allow us to conveniently and nicely print the information
+    created by a Solver. Each step of the solution is explained in an easy and
+    straightforward way such that the student can understand it
+    """
+    pass

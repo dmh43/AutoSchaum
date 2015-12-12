@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8915e08e-34a6-4e4c-a748-c0fcc9d10660" name="Default" comment="">
-      <change type="DELETED" beforePath="C:\Users\Dany\Documents\GitHub\Python\AutoSchaum\my_circuit" afterPath="" />
-      <change type="DELETED" beforePath="C:\Users\Dany\Documents\GitHub\Python\AutoSchaum\node_voltage" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/circuit.py" afterPath="$PROJECT_DIR$/circuit.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main.py" afterPath="$PROJECT_DIR$/main.py" />
     </list>
     <ignored path="AutoSchaum.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -25,14 +22,14 @@
     <favorites_list name="AutoSchaum" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.44149908">
+    <splitter split-orientation="horizontal" split-proportion="0.52193785">
       <split-first>
         <leaf>
-          <file leaf-file-name="main.py" pinned="false" current-in-tab="true">
+          <file leaf-file-name="main.py" pinned="false" current-in-tab="false">
             <entry file="file://$PROJECT_DIR$/main.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.40869564">
-                  <caret line="51" column="25" selection-start-line="51" selection-start-column="25" selection-end-line="51" selection-end-column="25" />
+                <state vertical-scroll-proportion="0.0">
+                  <caret line="47" column="22" selection-start-line="47" selection-start-column="22" selection-end-line="47" selection-end-column="22" />
                   <folding>
                     <element signature="e#172#186#0" expanded="true" />
                   </folding>
@@ -40,17 +37,13 @@
               </provider>
             </entry>
           </file>
-          <file leaf-file-name="circuit.py" pinned="false" current-in-tab="false">
+          <file leaf-file-name="circuit.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/circuit.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.0">
-                  <caret line="588" column="0" selection-start-line="588" selection-start-column="0" selection-end-line="588" selection-end-column="0" />
+                <state vertical-scroll-proportion="0.62608695">
+                  <caret line="537" column="23" selection-start-line="537" selection-start-column="23" selection-end-line="537" selection-end-column="23" />
                   <folding>
                     <element signature="e#1111#1128#0" expanded="true" />
-                    <element signature="e#24376#25086#0" expanded="false" />
-                    <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-                    <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-                    <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
                   </folding>
                 </state>
               </provider>
@@ -75,13 +68,10 @@
           <file leaf-file-name="circuit.py" pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/circuit.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state vertical-scroll-proportion="0.79130435">
-                  <caret line="885" column="37" selection-start-line="885" selection-start-column="37" selection-end-line="885" selection-end-column="37" />
+                <state vertical-scroll-proportion="3.9565217">
+                  <caret line="889" column="32" selection-start-line="889" selection-start-column="32" selection-end-line="889" selection-end-column="32" />
                   <folding>
                     <element signature="e#1111#1128#0" expanded="true" />
-                    <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-                    <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-                    <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
                   </folding>
                 </state>
               </provider>
@@ -212,6 +202,7 @@
     <property name="FileHistory.git4idea.history.GitHistoryProvider_treeOrder2" value="2" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_treeWidth3" value="831" />
     <property name="FileHistory.git4idea.history.GitHistoryProvider_treeOrder3" value="3" />
+    <property name="com.intellij.ide.scratch.NewScratchFileAction" value="YouTrack" />
   </component>
   <component name="RunManager" selected="Python.main">
     <configuration default="false" name="main" type="PythonConfigurationType" factoryName="Python" temporary="true">
@@ -483,9 +474,6 @@
           <caret line="69" column="56" selection-start-line="69" selection-start-column="56" selection-end-line="69" selection-end-column="56" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -513,9 +501,6 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -553,9 +538,6 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -593,9 +575,6 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -633,9 +612,6 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -673,9 +649,6 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -713,9 +686,6 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -746,9 +716,6 @@
           <caret line="2" column="2" selection-start-line="2" selection-start-column="2" selection-end-line="2" selection-end-column="2" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
@@ -903,23 +870,36 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.40869564">
-          <caret line="51" column="25" selection-start-line="51" selection-start-column="25" selection-end-line="51" selection-end-column="25" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="47" column="22" selection-start-line="47" selection-start-column="22" selection-end-line="47" selection-end-column="22" />
           <folding>
             <element signature="e#172#186#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$APPLICATION_CONFIG_DIR$/scratches/scratch">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_CONFIG_DIR$/consoles/ide/ide-scripting.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/circuit.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.79130435">
-          <caret line="885" column="37" selection-start-line="885" selection-start-column="37" selection-end-line="885" selection-end-column="37" />
+        <state vertical-scroll-proportion="0.62608695">
+          <caret line="537" column="23" selection-start-line="537" selection-start-column="23" selection-end-line="537" selection-end-column="23" />
           <folding>
             <element signature="e#1111#1128#0" expanded="true" />
-            <marker date="1449938613701" expanded="true" signature="12741:14668" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="22629:23090" placeholder="..." />
-            <marker date="1449938613701" expanded="true" signature="23759:23815" placeholder="..." />
           </folding>
         </state>
       </provider>
