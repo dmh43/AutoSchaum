@@ -83,7 +83,7 @@ class Node(object):
         return self
 
     def voltage_is_defined(self):
-        # TODO this is a mess because of the way I am defining self.voltage. fix this plzzzz
+        # TODO check that Voltage class is compatible with this. otherwise consider modifying it.
         if self.voltage == 0:
             return True
         elif isinstance(self.voltage, float) and math.isnan(self.voltage):
@@ -177,7 +177,6 @@ class Node(object):
 # TODO write function to go back and forth until all easy ones are found, explaining along the way
 # TODO equations for supernodes!!
 
-# TODO change the way we keep track of node num? Should be a global in the circuit
 # TODO for jesus de christo adopt a consistent naming convention
 # TODO each circuit should have it's own components etc
 # TODO shrink fuctions
@@ -200,11 +199,6 @@ class Supernode(object):
         # self.nodedict = {connected_nodes[i].node_num : connected_nodes[i] for i in range(len(connected_nodes))}  # list of nodes that are a part of the supernode
         self.nodelist = [node for node in list(itertools.chain(*[branch.nodelist for branch in branches]))]
         """:type : list[Node]"""
-        # TODO I dont think these next two values will be used
-        self.num_comp_connected = sum([i.num_comp_connected for i in self.nodelist])
-        """:type : int"""
-        self.y_connected = sum([i.y_connected for i in self.nodelist])
-        """:type : int"""
         self.master_node = self.nodelist[0]  # the master node is the first node that inserted into the supernode
         """:type : Node"""
         self.branchlist = []
@@ -213,28 +207,35 @@ class Supernode(object):
             branch.supernode = self
             self.add_branch(branch)
 
+    @property
+    def voltage_is_defined(self):
+        return self.master_node.voltage_is_defined()
+
+    @property
+    def voltage(self):
+        return self.master_node.voltage
+
+    @property
+    def node_num(self):
+        return self.master_node.node_num
+
+    @property
+    def num_comp_connected(self):
+        return self.master_node.num_comp_connected
+
     def evaluate_voltages(self):
         """
-        This function will evaluate and assign voltage values to each node inside a supernode. the return type is a
-            success flag
-        :return: type(True)
+        This function will evaluate and assign voltage values to each node inside a supernode.
         """
-        if math.isnan(self.master_node.voltage):  # this function should only run after the matrix equation has been
+        if math.isnan(self.voltage):  # this function should only run after the matrix equation has been
             # solved
             return False
         else:
-            for comp in self.master_node.connected_comps:
-                if type(comp) == components.VoltageSource:
-                    if comp.pos == self.master_node:
-                        comp.neg.voltage = self.master_node.voltage - comp.v
-                    else:
-                        comp.pos.voltage = self.master_node.voltage + comp.v
-            return True
+            # TODO finish
+            cursor = Cursor(self.master_node)
 
     def add_branch(self, branch):
         self.branchlist.append(branch)
-        #for comp in branch.component_list:
-            #self.add_comp(comp)
         self.nodelist.extend(branch.nodelist)
         self.nodelist = list(set(self.nodelist))
 
@@ -251,15 +252,14 @@ class Branch(object):
     :type component_list: list[components.Component]
     :type branch_num: int
     """
-    _num_branches = itertools.count(0)
-    # TODO fix branch numbering
 
-    def __init__(self):
+    def __init__(self, branch_number):
         self.nodelist = []
         """:type : list[Node]"""
         self.component_list = []
         """:type : list[components.Component]"""
-        self.branch_num = self._num_branches.next()
+        self.branch_num = branch_number
+        """:type : int"""
         self.supernode = None
         """:type : Supernode"""
         self.current = None
@@ -392,6 +392,7 @@ class Circuit(object):
         self.node_vars = []
         self.known_vars = []
         self.result = []
+        self.num_branches = 0
 
     def load_netlist(self, netlist_file):
         self.netlist = self.netlist_file.read().split('\n')
@@ -477,7 +478,7 @@ class Circuit(object):
 
     def create_branches(self):
         if len(self.nontrivial_nodedict.values()) == 0:
-            current_branch = Branch()
+            current_branch = Branch(self.num_branches+1)
             for node in self.nodedict.values():
                 current_branch.add_node(node)
             for comp in self.component_list:
@@ -486,7 +487,7 @@ class Circuit(object):
             if not only_branchless(node.connected_comps):  # if all conncomps have branches
                 # TODO maybe wrap in a function^
                 continue
-            new_branch = Branch()
+            new_branch = Branch(self.num_branches+1)
             new_branch.add_node(node)
             branch_cursor = BranchCreatorCursor(node, new_branch)
             while only_branchless(node.connected_comps):  # no more branchless conncomps
@@ -506,7 +507,7 @@ class Circuit(object):
                 if not only_branchless(node.connected_comps):  # if all conncomps have branches
                     # TODO maybe wrap in a function^
                     break
-                new_branch = Branch()
+                new_branch = Branch(self.num_branches+1)
                 new_branch.add_node(node)
                 branch_cursor.branch = new_branch  # TODO wrap in method?
                 branch_cursor.location = node
@@ -763,7 +764,6 @@ class Cursor(object):
         """
         Takes a step forward in the first direction away from node
         """
-        # TODO change this and other similar functions to call a parent fun which has variable isntead of 0
         next_node_choices = [direc for direc in self.directions() if direc != node]
         return self.step_to(next_node_choices[0])
 
@@ -834,7 +834,7 @@ class Voltage(Direction):
     def into_sympy(self):
         pass
 
-
+# TODO maybe a Current class should be created which is just a value or current expression and node
 class CurrentExp(Direction):
     def __init__(self, voltage_list, impedances):
         """
