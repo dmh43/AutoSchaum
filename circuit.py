@@ -392,12 +392,15 @@ class Circuit(object):
         self.node_vars = []
         self.known_vars = []
         self.result = []
-        self.num_branches = 0
 
     def load_netlist(self, netlist_file):
-        self.netlist = self.netlist_file.read().split('\n')
+        self.netlist = netlist_file.read().split('\n')
         self.name = self.netlist[0]
         self.netlist = self.netlist[1:]
+
+    @property
+    def num_branches(self):
+        return len(self.branchlist)
 
     def create_nodes(self):
         """
@@ -557,7 +560,7 @@ class Circuit(object):
             self.node_voltage_eqs.append(sympy.sympify(self.node_voltage_eqs_str[-1]))
 
 
-    # TODO circuit equations should be a class with progression
+    # TODO circuit equations should be a class with solving/progression methods
 
     def determine_known_vars(self):
         for node in self.nodedict.values():
@@ -876,3 +879,9 @@ class CurrentExp(Direction):
 
     def into_sympy(self):
         self.sympy_expr = sympy.sympify(self.str_expr)
+
+class Solver(object):
+    """
+    A Solver contains an unsolved Circuit instance and each step of the solution
+    as well as methods solve each step
+    """

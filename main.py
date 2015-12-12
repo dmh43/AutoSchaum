@@ -50,13 +50,11 @@ print("Performing KCL at each of the nodes in the circuit:")
 #ohms.kcl_everywhere()
 #ohms.ohms_law_where_easy()
 ohms.gen_node_voltage_eq()
+#ohms.sub_zero_for_ref()
 ohms.determine_known_vars()
-ohms.sub_zero_for_ref()
-#ohms.solve_eqs()
-#ohms.sub_into_eqs()
-print sympy.solve(ohms.subbed_eqs, ohms.node_vars)
-#print ohms.solved_eq
-ohms.sub_into_result()
+ohms.sub_into_eqs()
+ohms.solve_eqs()
+print ohms.solved_eq
 print ohms.result
 # TODO add some neater printing
 # TODO clean up solver. Should be class??
