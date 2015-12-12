@@ -1,6 +1,7 @@
 __author__ = 'Dany'
-""" Each circuit is represented by a netlist where each line has the following format:
+""" Each circuit is read from a netlist where each line has the following format:
         [component refdes] [list of nodes to connect to] [value]
+        and the first line is the name of the circuit
     Component Types:
         -Resistor 'R'
         -Capacitor 'C'
@@ -18,6 +19,9 @@ __author__ = 'Dany'
         -Current Source: A
     Each circuit has a corresponding admittance matrix and current injection vector:
         I = YV; where I and V are vectors and Y is a matrix
+    The design philosphy is pretty undefined at this point so I encourage others to make changes
+        in accordance to their own preferences. However, I am a fan of DRY and KISS and try to implmenet
+        those here wherever I can and wherever I remember to.
 """
 import components
 from helper_funcs import *
@@ -31,27 +35,37 @@ import copy
 
 class Node(object):
     """
-    contains information about which devices are connected to which nodes and which nodes are supernodes and gnd
+    Represents a node in the circuit and holds the data relevant to it. Here, a node is defined as the junction
+    connecting two components
     :type num_comp_connected: int
     :type y_connected: int
     :type connected_comps: list[components.Component]
     :type voltage: float
     :type node_num: int
     """
-    _num_nodes = itertools.count(0)
 
-    def __init__(self):
+    def __init__(self, node_num):
         """
         instantiates a node object. An empty node is created and then components are connected using class methods
         :return: Init functions do not return a value
         """
-        self.num_comp_connected = 0  # number of devices connected to this node
         self.y_connected = 0  # sum of admittances connected
+        """:type : int"""
         self.connected_comps = []  # connected components
+        """:type : list[components.Component]"""
         self.voltage = float('NaN')
-        self.node_num = self._num_nodes.next()
+        """:type : complex"""
+        self.node_num = node_num
+        """:type : int"""
         self.branchlist = []
         """:type : list[Branch]"""
+
+    @property
+    def num_comp_connected(self):
+        """
+        :return: Number of components connected to this node
+        """
+        return len(self.connected_comps)
 
     def add_comp(self, comp):
         """
@@ -63,7 +77,6 @@ class Node(object):
         :return: returns the node
         :rtype Node:
         """
-        self.num_comp_connected += 1
         self.connected_comps.append(comp)
         if isinstance(comp, components.Impedance):
             self.y_connected += comp.y
@@ -163,17 +176,13 @@ class Node(object):
 
 # TODO write function to go back and forth until all easy ones are found, explaining along the way
 # TODO equations for supernodes!!
-# TODO solve equations with sympy
-# TODO print equations and solutions
 
-# TODO for jesus de christo adopt a consistent naming convention
-# TODO dependent voltage sources
-# TODO reorganize
-# TODO add_comp should be done when the component is instantiated?
 # TODO change the way we keep track of node num? Should be a global in the circuit
-# TODO consider removing list comprehensions for something more easily debugggable
-# TODO shrink fuctions
+# TODO for jesus de christo adopt a consistent naming convention
 # TODO each circuit should have it's own components etc
+# TODO shrink fuctions
+# TODO add_comp should be done when the component is instantiated?
+# TODO dependent voltage sources
 # TODO draw circuits
 
 class Supernode(object):
@@ -340,14 +349,15 @@ class Circuit(object):
         R1 0 1 1
         R2 0 2 10
         R3 1 2 1
+        A Circuit contains all the information which is relevant to the representation of a circuit
         """
-        self.netlist_file = open(netlist_filename, 'r')
+        self.netlist_file = None
         """:type : file"""
-        self.netlist = self.netlist_file.read().split('\n')
+        self.netlist = None
         """:type : str"""
-        self.name = self.netlist[0]
+        self.name = None
         """:type : str"""
-        self.netlist = self.netlist[1:]
+        self.netlist = None
         """:type : str"""
         self.nodedict = {}
         """:type : dict[int, Node]"""
@@ -383,6 +393,11 @@ class Circuit(object):
         self.known_vars = []
         self.result = []
 
+    def load_netlist(self, netlist_file):
+        self.netlist = self.netlist_file.read().split('\n')
+        self.name = self.netlist[0]
+        self.netlist = self.netlist[1:]
+
     def create_nodes(self):
         """
         parses self.netlist to create nodes
@@ -391,7 +406,7 @@ class Circuit(object):
         self.num_nodes = max([max(int(comp.split(' ')[1]), int(comp.split(' ')[2])) for comp in self.netlist]) + 1
         # this compensates for zero indexing
         for i in range(self.num_nodes):
-            self.nodedict[i] = Node()
+            self.nodedict[i] = Node(i)
 
     def create_supernodes(self):
         """
@@ -444,8 +459,6 @@ class Circuit(object):
                                                    (self.nodedict[int(data[1])],
                                                     self.nodedict[int(data[2])]))
             """:type : components.Component"""
-            new_comp.pos.add_comp(new_comp)
-            new_comp.neg.add_comp(new_comp)
 
     def identify_nontrivial_nodes(self):
         """
@@ -558,6 +571,7 @@ class Circuit(object):
                 self.known_vars.append(("{0}".format(comp.refdes), comp.v))
 
     def sub_zero_for_ref(self):
+        # TODO make this such that the node num of ref actually chnges
         for eq in self.node_voltage_eqs:
             self.subbed_eqs.append(eq.subs("V{0}".format(self.ref.node_num), 0))
 

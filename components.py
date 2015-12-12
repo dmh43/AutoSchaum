@@ -222,4 +222,6 @@ def create_component(name, comp_list, value, nodes):
         pass
     elif name[0:4] == "ICIS":
         pass
+    for node in nodes:
+        node.add_comp(comp_list[-1])
     return comp_list[-1]
