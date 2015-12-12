@@ -789,17 +789,20 @@ class CurrentExp(Direction):
     def into_sympy(self):
         self.sympy_expr = sympy.sympify(self.str_expr)
 
-class Solution(object):
-    """
-    Represents the solution of a Circuit. Keeps track of each step of the solution.
-    This object also prepares the solution for the Teacher.
-    """
-    pass
-
 class Solver(object):
     """
-    A Solver contains an unsolved Circuit instance and each step of the solution
-    as well as methods solve each step
+    Represents the Circuit solver. Keeps track of each step of the solution. Performs
+    each solution step on each SolutionStep
+    """
+    def __init__(self, base_circuit):
+        """
+        :type base_circuit: Circuit
+        """
+        self.solution = [base_circuit]
+
+class SolutionStep(object):
+    """
+    Contains a Circuit instance which represents a step in the solution
     """
     def __init__(self, circuit_to_solve):
         self.numerators = []
