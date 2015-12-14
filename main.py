@@ -37,25 +37,26 @@ ohms.calc_admittance_matrix()
 ohms.identify_nontrivial_nodes()
 ohms.create_branches()
 ohms.create_supernodes()
-ohms.sub_super_nodes()
-ohms.define_reference_voltage()
+ohms.sub_super_nodes() #this should be in Solver
+ohms.define_reference_voltage() # this should be in Solver
 ohms.ref = ohms.nodedict[0]
-ohms.identify_nontrivial_nonsuper_nodes()
+ohms.identify_nontrivial_nonsuper_nodes() #this should be in solver
 print("First choose a reference voltage (ground node):\nNode {0} is ref at 0V".format(ohms.ref.node_num))
 print("Now, for each voltage source connected to this reference, it is easy to determine the voltage at the opposite node")
-ohms.identify_voltages()
+my_solution = circuit.Solver(ohms)
+my_solution.identify_voltages()
 print("With this information, we can calculate the current through each resistive branch across which the voltage is known:")
-ohms.identify_currents()
+my_solution.identify_currents()
 print("Performing KCL at each of the nodes in the circuit:")
 #ohms.kcl_everywhere()
 #ohms.ohms_law_where_easy()
-ohms.gen_node_voltage_eq()
+my_solution.gen_node_voltage_eq()
 #ohms.sub_zero_for_ref()
-ohms.determine_known_vars()
-ohms.sub_into_eqs()
-ohms.solve_eqs()
-print ohms.solved_eq
-print ohms.result
+my_solution.determine_known_vars()
+my_solution.sub_into_eqs()
+my_solution.solve_eqs()
+print my_solution.solution[-1].solved_eq
+print my_solution.solution[-1].result
 # TODO add some neater printing
 # TODO clean up solver. Should be class??
 # TODO Tidy
@@ -64,6 +65,6 @@ print ohms.result
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)
-ohms.printer()
+my_solution.printer()
 #print(ohms.numerators)
 #print(ohms.denomenators)

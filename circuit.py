@@ -874,12 +874,12 @@ class Solver(object):
 
     def sub_into_result(self):
         self.solution.append(copy.deepcopy(self.solution[-1]))
-        for eq in self.solved_eq.values():
+        for eq in self.solution[-1].solved_eq.values():
             self.solution[-1].result.append(eq.subs(self.solution[-1].known_vars))
 
     def solve_eqs(self):
         self.solution.append(copy.deepcopy(self.solution[-1]))
-        self.solved_eq = sympy.solve(self.solution[-1].node_voltage_eqs, self.solution[-1].node_vars)
+        self.solution[-1].solved_eq = sympy.solve(self.solution[-1].node_voltage_eqs, self.solution[-1].node_vars)
 
     def kcl_everywhere(self):
         self.solution.append(copy.deepcopy(self.solution[-1]))
@@ -908,7 +908,6 @@ class SolutionStep(object):
         self.result = []
         self.circuit = circuit_to_solve
         """:type : Circuit"""
-
 
 
 class Teacher(object):
