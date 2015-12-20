@@ -1,6 +1,6 @@
 __author__ = 'Dany'
 import math
-import circuit
+import cursors
 from helper_funcs import *
 
 class Component(object):
@@ -96,8 +96,8 @@ class Component(object):
             return node1
         elif node2 == ref_node:
             return node2
-        first_cursor = circuit.Cursor(node1)
-        second_cursor = circuit.Cursor(node2)
+        first_cursor = cursors.Cursor(node1)
+        second_cursor = cursors.Cursor(node2)
         while (first_cursor.location != ref_node and
                second_cursor.location != ref_node):
             first_cursor.step_forward_away(node2)

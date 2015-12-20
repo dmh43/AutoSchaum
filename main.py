@@ -1,6 +1,6 @@
 __author__ = 'Dany'
-__hand_drawn = True
-if __hand_drawn:
+__handdrawn__ = True
+if __handdrawn__:
     from matplotlib import pyplot as plt
     plt.xkcd()
 #import SchemDraw as schem
@@ -19,13 +19,6 @@ import sympy
 # d.add(e.GND, xy=l1.center)
 # d.draw()
 # d.save('testschematic.png', dpi = 300)
-
-"""
-ideas:
-renumer nodes so that it matches your solution
-define ground so that it matches your solution
-solve symbolically then evaluate
-"""
 
 #ohms = circuit.Circuit('text')
 #ohms = circuit.Circuit('my_circuit')
@@ -57,11 +50,6 @@ my_solution.sub_into_eqs()
 my_solution.solve_eqs()
 print my_solution.solution[-1].solved_eq
 print my_solution.solution[-1].result
-# TODO add some neater printing
-# TODO clean up solver. Should be class??
-# TODO Tidy
-# TODO Supernode equations
-# TODO Heroku
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)
