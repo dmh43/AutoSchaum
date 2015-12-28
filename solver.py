@@ -172,3 +172,4 @@ class Teacher(object):
         print("Substituting in for the known variables:")
         print(self.solver.solution[-1].known_vars)
         print("And solving the system of equations using Kramer's rule or equivalent method:")
+        print(self.solver.solution[-1].solved_eq)

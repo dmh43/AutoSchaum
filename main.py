@@ -26,10 +26,12 @@ my_solution.gen_node_voltage_eq()
 my_solution.determine_known_vars()
 my_solution.sub_into_eqs()
 my_solution.solve_eqs()
-print my_solution.solution[-1].solved_eq
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)
 my_solution.printer()
+vivias = solver.Teacher(my_solution)
+vivias.explain()
+pass
 #print(ohms.numerators)
 #print(ohms.denomenators)
