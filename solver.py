@@ -4,6 +4,7 @@ import sympy
 import helper_funcs
 import components
 
+
 class Solver(object):
     """
     Represents the Circuit solver. Keeps track of each step of the solution. Performs
@@ -102,7 +103,7 @@ class Solver(object):
         for node in self.solution[-1].circuit.nontrivial_nodedict.values():
             node.solve_kcl() # TODO CHANGE THIS NAME
 
-    def define_reference_voltage(self, node=0):
+    def set_reference_voltage(self, node=0):
         """
         The user should be allowed to select the reference node!
         This function deines the reference voltage to be the node with the most components connected
