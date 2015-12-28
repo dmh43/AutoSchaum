@@ -28,13 +28,13 @@ class Solver(object):
     def identify_voltages(self):
         """performs KVL to identify and set voltages at nodes connected to ground through a component"""
         self.solution.append(copy.deepcopy(self.solution[-1]))
-        self.solution[-1].circuit.ref.voltage = 0
-        kvl_cursor = cursors.Cursor(self.solution[-1].circuit.ref)
+        self.solution[-1].ref.voltage = 0
+        kvl_cursor = cursors.Cursor(self.solution[-1].ref)
         while True:
             while kvl_cursor.unseen_vsources_connected():  # While not empty
                 first_unseen_source = helper_funcs.only_vsources(kvl_cursor.step_down_unseen_vsource())[0] # will only contain a single vsource at most
                 first_unseen_source.set_other_node_voltage()
-            if kvl_cursor.location != self.solution[-1].circuit.ref:  # if you're no longer at ref
+            if kvl_cursor.location != self.solution[-1].ref:  # if you're no longer at ref
                 kvl_cursor.step_back()
             elif not kvl_cursor.unseen_vsources_connected():  # if no more sources and at ref node
                 break
@@ -64,7 +64,8 @@ class Solver(object):
         :return: list of strings to be sympified into sympy expressions
         """
         self.solution.append(copy.deepcopy(self.solution[-1]))
-        for node in list(set(self.solution[-1].circuit.non_trivial_reduced_nodedict.values()) - set([self.solution[-1].circuit.ref])):
+        #for node in list(set(self.solution[-1].circuit.non_trivial_reduced_nodedict.values()) - {self.solution[-1].ref}):
+        for node in [start_node for start_node in self.circuit.non_trivial_reduced_nodedict.values() if start_node.node_num != self.solution[-1].ref.node_num]:
             current_exps = node.node_voltage_kcl()
             for exp in current_exps:
                 exp.into_str()
@@ -88,7 +89,7 @@ class Solver(object):
         self.solution.append(copy.deepcopy(self.solution[-1]))
         # TODO make this such that the node num of ref actually chnges
         for eq in self.solution[-1].node_voltage_eqs:
-            self.solution[-1].subbed_eqs.append(eq.subs("V{0}".format(self.solution[-1].circuit.ref.node_num), 0))
+            self.solution[-1].subbed_eqs.append(eq.subs("V{0}".format(self.solution[-1].ref.node_num), 0))
 
     def sub_into_eqs(self):
         self.solution.append(copy.deepcopy(self.solution[-1]))
@@ -121,9 +122,9 @@ class Solver(object):
         """
         self.solution.append(copy.deepcopy(self.solution[-1]))
         if node == 0:
-            self.solution[-1].circuit.ref = sorted(self.solution[-1].circuit.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
+            self.solution[-1].ref = sorted(self.solution[-1].circuit.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
         else:
-            self.solution[-1].circuit.ref = node
+            self.solution[-1].ref = node
 
 
 class SolutionStep(object):
@@ -161,7 +162,7 @@ class Teacher(object):
         """:type : Solver"""
 
     def explain(self):
-        print("First choose a reference voltage (ground node):\nNode {0} is ref at 0V".format(self.solver.circuit.ref.node_num))
+        print("First choose a reference voltage (ground node):\nNode {0} is ref at 0V".format(self.solver.solution[-1].ref.node_num))
         print("We then identify the voltage at each node connected to ground.")
         # TODO insert printing of voltages
         print("With this information, we can calculate the current through each resistive branch across which the voltage is known:")

@@ -15,7 +15,7 @@ ohms.create_supernodes()
 ohms.sub_super_nodes()
 ohms.identify_nontrivial_nonsuper_nodes() # TODO some of these should be moved to solver later
 my_solution = solver.Solver(ohms)
-my_solution.set_reference_voltage(ohms.nodedict[0])
+my_solution.set_reference_voltage(my_solution.circuit.non_trivial_reduced_nodedict[0])
 my_solution.identify_voltages()
 my_solution.identify_currents()
 #print("Performing KCL at each of the nodes in the circuit:") #TODO Move to solver
@@ -29,7 +29,6 @@ my_solution.solve_eqs()
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)
-my_solution.printer()
 vivias = solver.Teacher(my_solution)
 vivias.explain()
 pass
