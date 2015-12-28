@@ -1,8 +1,8 @@
-__author__ = 'Dany'
-import circuit
+import cursors
 import copy
-from helper_funcs import *
-from cursors import *
+import sympy
+import helper_funcs
+import components
 
 class Solver(object):
     """
@@ -19,10 +19,10 @@ class Solver(object):
     def identify_voltages(self):
         self.solution.append(copy.deepcopy(self.solution[-1]))
         self.solution[-1].circuit.ref.voltage = 0
-        kvl_cursor = Cursor(self.solution[-1].circuit.ref)
+        kvl_cursor = cursors.Cursor(self.solution[-1].circuit.ref)
         while True:
             while kvl_cursor.unseen_vsources_connected():  # While not empty
-                first_unseen_source = only_vsources(kvl_cursor.step_down_unseen_vsource())[0] # will only contain a single vsource at most
+                first_unseen_source = helper_funcs.only_vsources(kvl_cursor.step_down_unseen_vsource())[0] # will only contain a single vsource at most
                 first_unseen_source.set_other_node_voltage()
             if kvl_cursor.location != self.solution[-1].circuit.ref:  # if you're no longer at ref
                 kvl_cursor.step_back()
@@ -40,7 +40,7 @@ class Solver(object):
         :return:
         """
         self.solution.append(copy.deepcopy(self.solution[-1]))
-        for res in only_resistances(self.solution[-1].circuit.component_list):
+        for res in helper_funcs.only_resistances(self.solution[-1].circuit.component_list):
             if res.node_current_in == res.pos:
                 res.branch.current = res.voltage/res.z
             elif res.node_current_in == res.neg:
@@ -102,6 +102,19 @@ class Solver(object):
         for node in self.solution[-1].circuit.nontrivial_nodedict.values():
             node.solve_kcl() # TODO CHANGE THIS NAME
 
+    def define_reference_voltage(self, node=0):
+        """
+        The user should be allowed to select the reference node!
+        This function deines the reference voltage to be the node with the most components connected
+        :type node: Node
+        :return:
+        """
+        self.solution.append(copy.deepcopy(self.solution[-1]))
+        if node == 0:
+            self.solution[-1].circuit.ref = sorted(self.solution[-1].circuit.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
+        else:
+            self.solution[-1].circuit.ref = node
+
 
 class SolutionStep(object):
     """
@@ -123,6 +136,8 @@ class SolutionStep(object):
         self.result = []
         self.circuit = circuit_to_solve
         """:type : Circuit"""
+        self.ref = None
+        """:type : circuit.Node"""
 
 
 class Teacher(object):

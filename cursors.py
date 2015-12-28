@@ -1,6 +1,5 @@
-__author__ = 'Dany'
+import helper_funcs
 import components
-from helper_funcs import *
 
 class Cursor(object):
     """
@@ -42,7 +41,7 @@ class Cursor(object):
         :type node: Node
         :return: the list of components stepped over (connecting to the current node and the next node)
         """
-        connecting_list = connecting(node, self.location)
+        connecting_list = helper_funcs.connecting(node, self.location)
         if node not in self.directions():
             return self.location
         self.location = node
@@ -61,7 +60,7 @@ class Cursor(object):
         :type node: Node
         :return: the component stepped along (the one marked as seen)
         """
-        unseen_connecting_list = self.unseen(connecting(node, self.location))
+        unseen_connecting_list = self.unseen(helper_funcs.connecting(node, self.location))
         if node not in self.directions():
             raise ValueError
         self.location = node
@@ -90,7 +89,7 @@ class Cursor(object):
         :return: returns the list of components that was stepped over
         """
         self.breadcrumbs.append(self.location)
-        return self.step_to(other_node(self.unseen_vsources_connected()[0], self.location))
+        return self.step_to(helper_funcs.other_node(self.unseen_vsources_connected()[0], self.location))
 
     def step_back(self):
         self.step_to(self.breadcrumbs.pop())
@@ -100,7 +99,7 @@ class Cursor(object):
         Returns a list containing the directions (nodes) the cursor can go
         :rtype: list[Node]
         """
-        return [other_node(comp, self.location) for comp in self.location.connected_comps]
+        return [helper_funcs.other_node(comp, self.location) for comp in self.location.connected_comps]
 
     def new_directions(self):
         """
@@ -112,7 +111,7 @@ class Cursor(object):
             if comp in self.components_seen:
                 continue
             else:
-                new_direcs.append(other_node(comp, self.location))
+                new_direcs.append(helper_funcs.other_node(comp, self.location))
         return new_direcs
 
     def new_alongs(self):
@@ -171,7 +170,7 @@ class KCLCursor(Cursor):
             if ((self.location in comp.nodes) and (comp not in self.components_seen)):
                 component_to_jump_over = comp
                 break
-        destination = other_node(component_to_jump_over, self.location)
+        destination = helper_funcs.other_node(component_to_jump_over, self.location)
         return self.step_to(destination)
 
 
@@ -191,11 +190,11 @@ class BranchCreatorCursor(Cursor):
         self.branch = branch
 
     def step_to(self, node):
-        for comp in connecting(self.location, node):
+        for comp in helper_funcs.connecting(self.location, node):
             self.branch.add_comp(comp)
         super(BranchCreatorCursor, self).step_to(node)
         self.branch.add_node(node)
-        return connecting(self.last_node_seen(), node)
+        return helper_funcs.connecting(self.last_node_seen(), node)
 
     def step_along(self, node):
         new_comp_seen = super(BranchCreatorCursor, self).step_along(node)

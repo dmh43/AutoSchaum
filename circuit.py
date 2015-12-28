@@ -1,4 +1,3 @@
-__author__ = 'Dany'
 """ Each circuit is read from a netlist where each line has the following format:
         [component refdes] [list of nodes to connect to] [value]
         and the first line is the name of the circuit
@@ -24,7 +23,6 @@ __author__ = 'Dany'
         those here wherever I can and wherever I remember to.
 """
 import components
-from helper_funcs import *
 from cursors import *
 
 import math
@@ -371,8 +369,7 @@ class Circuit(object):
         """:type : list[list[int]]"""
         self.num_nodes = 0
         """:type : int"""
-        self.ref = None
-        """:type : Node"""
+        self.load_netlist(open(netlist_filename, 'r'))
 
     def load_netlist(self, netlist_file):
         self.netlist = netlist_file.read().split('\n')
@@ -428,13 +425,6 @@ class Circuit(object):
             if self.nodedict[node] not in internal_nodes:
                 self.reduced_nodedict[node] = self.nodedict[node]
 
-    def define_reference_voltage(self):
-        """
-        The user should be allowed to select the reference node!
-        This function deines the reference voltage to be the node with the most components connected
-        :return:
-        """
-        self.ref = sorted(self.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
 
     def populate_nodes(self):
         for comp in self.netlist:
@@ -468,13 +458,13 @@ class Circuit(object):
             for comp in self.component_list:
                 current_branch.add_comp(comp)
         for node in self.nontrivial_nodedict.values():
-            if not only_branchless(node.connected_comps):  # if all conncomps have branches
+            if not helper_funcs.only_branchless(node.connected_comps):  # if all conncomps have branches
                 # TODO maybe wrap in a function^
                 continue
             new_branch = Branch(self.num_branches+1)
             new_branch.add_node(node)
             branch_cursor = BranchCreatorCursor(node, new_branch)
-            while only_branchless(node.connected_comps):  # no more branchless conncomps
+            while helper_funcs.only_branchless(node.connected_comps):  # no more branchless conncomps
                 while True:
                     branch_cursor.step_along_branch()
                     if new_branch.is_complete_branch():
@@ -488,7 +478,7 @@ class Circuit(object):
                 else:
                     for undo_node in new_branch.nodelist:
                         undo_node.branchlist.pop()  # TODO oh... this is ugly. fix it. plz
-                if not only_branchless(node.connected_comps):  # if all conncomps have branches
+                if not helper_funcs.only_branchless(node.connected_comps):  # if all conncomps have branches
                     # TODO maybe wrap in a function^
                     break
                 new_branch = Branch(self.num_branches+1)
@@ -516,7 +506,7 @@ class Circuit(object):
                         else:
                             continue
                 else:
-                    for comp in connecting(node1, node2):
+                    for comp in helper_funcs.connecting(node1, node2):
                         if isinstance(comp, components.Impedance):
                             self.ym[node1.node_num][node2.node_num] -= comp.y
 

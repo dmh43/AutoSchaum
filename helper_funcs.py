@@ -1,6 +1,3 @@
-__author__ = 'Dany'
-
-from circuit import *
 import components
 
 def only_vsources(comp_list):

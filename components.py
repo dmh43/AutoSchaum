@@ -1,7 +1,5 @@
-__author__ = 'Dany'
-import math
 import cursors
-from helper_funcs import *
+import helper_funcs
 
 class Component(object):
     """
@@ -72,10 +70,10 @@ class Component(object):
         """
         parallel_comps = []
         for comp in self.pos.connected_comps:
-            if other_node(comp, self.pos) == self.neg:
+            if helper_funcs.other_node(comp, self.pos) == self.neg:
                 parallel_comps.append(comp)
         for comp in self.neg.connected_comps:
-            if other_node(comp, self.neg) == self.pos:
+            if helper_funcs.other_node(comp, self.neg) == self.pos:
                 parallel_comps.append(comp)
         return parallel_comps
 

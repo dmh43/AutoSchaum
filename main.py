@@ -1,4 +1,3 @@
-__author__ = 'Dany'
 __handdrawn__ = True
 if __handdrawn__:
     from matplotlib import pyplot as plt
@@ -20,17 +19,13 @@ import sympy
 # d.draw()
 # d.save('testschematic.png', dpi = 300)
 
-#ohms = circuit.Circuit('text')
-#ohms = circuit.Circuit('my_circuit')
-ohms = circuit.Circuit('node_voltage')
-ohms.load_netlist(open('node_voltage.crt', 'r'))
+ohms = circuit.Circuit('node_voltage.crt')
 ohms.create_nodes()
 ohms.populate_nodes()
-ohms.calc_admittance_matrix()
 ohms.identify_nontrivial_nodes()
 ohms.create_branches()
 ohms.create_supernodes()
-ohms.sub_super_nodes() #this should be in Solver
+ohms.sub_super_nodes()
 ohms.define_reference_voltage() # this should be in Solver
 ohms.ref = ohms.nodedict[0]
 ohms.identify_nontrivial_nonsuper_nodes() #this should be in solver
