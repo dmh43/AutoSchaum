@@ -14,14 +14,11 @@ ohms.create_branches()
 ohms.create_supernodes()
 ohms.sub_super_nodes()
 ohms.identify_nontrivial_nonsuper_nodes() # TODO some of these should be moved to solver later
-print("First choose a reference voltage (ground node):\nNode {0} is ref at 0V".format(ohms.ref.node_num))
-print("Now, for each voltage source connected to this reference, it is easy to determine the voltage at the opposite node")
 my_solution = solver.Solver(ohms)
-my_solution.set_reference_voltage(ohms.nodedict[0]) # this should be in Solver
+my_solution.set_reference_voltage(ohms.nodedict[0])
 my_solution.identify_voltages()
-print("With this information, we can calculate the current through each resistive branch across which the voltage is known:")
 my_solution.identify_currents()
-print("Performing KCL at each of the nodes in the circuit:")
+#print("Performing KCL at each of the nodes in the circuit:") #TODO Move to solver
 #ohms.kcl_everywhere()
 #ohms.ohms_law_where_easy()
 my_solution.gen_node_voltage_eq()
@@ -30,7 +27,6 @@ my_solution.determine_known_vars()
 my_solution.sub_into_eqs()
 my_solution.solve_eqs()
 print my_solution.solution[-1].solved_eq
-print my_solution.solution[-1].result
 #print(ohms.nodelist)
 #print(ohms.num_nodes)
 #print(ohms.netlist)

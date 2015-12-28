@@ -17,7 +17,16 @@ class Solver(object):
         self.solution = [SolutionStep(base_circuit)]
         """:type : list[SolutionStep]"""
 
+    def getcircuit(self):
+        return self.solution[-1].circuit
+
+    def setcircuit(self, circuit):
+        self.solution[-1].circuit = circuit
+
+    circuit = property(getcircuit, setcircuit)
+
     def identify_voltages(self):
+        """performs KVL to identify and set voltages at nodes connected to ground through a component"""
         self.solution.append(copy.deepcopy(self.solution[-1]))
         self.solution[-1].circuit.ref.voltage = 0
         kvl_cursor = cursors.Cursor(self.solution[-1].circuit.ref)
@@ -47,7 +56,7 @@ class Solver(object):
             elif res.node_current_in == res.neg:
                 res.branch.current = -res.voltage/res.z
 
-    # TODO add another func for KCL but in terms of sympy equations where it can generate many sympy
+    # TODO add another func for KCL but in terms of sympy equations where it can generate many sympy. This is part of the larger idea of wrapping each operation in such a way that the program determines which operation to execute
 
     def gen_node_voltage_eq(self):
         """
@@ -147,4 +156,19 @@ class Teacher(object):
     created by a Solver. Each step of the solution is explained in an easy and
     straightforward way such that the student can understand it
     """
-    pass
+    def __init__(self, solver):
+        self.solver = solver
+        """:type : Solver"""
+
+    def explain(self):
+        print("First choose a reference voltage (ground node):\nNode {0} is ref at 0V".format(self.solver.circuit.ref.node_num))
+        print("We then identify the voltage at each node connected to ground.")
+        # TODO insert printing of voltages
+        print("With this information, we can calculate the current through each resistive branch across which the voltage is known:")
+        # TODO insert printing of currents
+        print("This allows us to solve some circuits which don't require node voltage or mesh current analysis")
+        print("Performing KCL at each node:")
+        print(self.solver.solution[-1].node_voltage_eqs_str)
+        print("Substituting in for the known variables:")
+        print(self.solver.solution[-1].known_vars)
+        print("And solving the system of equations using Kramer's rule or equivalent method:")
