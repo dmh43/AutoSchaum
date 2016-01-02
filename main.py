@@ -1,5 +1,6 @@
 import circuit
 import solver
+import drawer
 
 __handdrawn__ = True
 if __handdrawn__:
@@ -14,6 +15,8 @@ ohms.create_branches()
 ohms.create_supernodes()
 ohms.sub_super_nodes()
 ohms.identify_nontrivial_nonsuper_nodes() # TODO some of these should be moved to solver later
+schem = drawer.Schematic(ohms)
+schem.draw_schem()
 my_solution = solver.Solver(ohms)
 my_solution.set_reference_voltage(my_solution.circuit.non_trivial_reduced_nodedict[0])
 my_solution.identify_voltages()

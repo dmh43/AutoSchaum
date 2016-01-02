@@ -107,6 +107,11 @@ class Solver(object):
         self.solution.append(copy.deepcopy(self.solution[-1]))
         self.solution[-1].solved_eq = sympy.solve(self.solution[-1].node_voltage_eqs, self.solution[-1].node_vars)
 
+    def solve_subbed_eqs(self):
+        self.solution.append(copy.deepcopy(self.solution[-1]))
+        self.solution[-1].solved_subbed_eq = sympy.solve(self.solution[-1].subbed_eqs, self.solution[-1].node_vars)
+        # TODO fix this. sypy equations are mutable. An equation is not returned here, subbed_eqs is mutated
+
     def kcl_everywhere(self):
         self.solution.append(copy.deepcopy(self.solution[-1]))
         # TODO Honestly... what even is this?...
@@ -141,6 +146,7 @@ class SolutionStep(object):
         """:type : list[str]"""
         self.node_voltage_eqs = []
         self.subbed_eqs = []
+        self.solved_subbed_eq = []
         self.solved_eq = None
         self.node_vars = []
         self.known_vars = []
@@ -173,4 +179,4 @@ class Teacher(object):
         print("Substituting in for the known variables:")
         print(self.solver.solution[-1].known_vars)
         print("And solving the system of equations using Kramer's rule or equivalent method:")
-        print(self.solver.solution[-1].solved_eq)
+        print(self.solver.solution[-1].subbed_eqs)
