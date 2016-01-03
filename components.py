@@ -1,5 +1,6 @@
 import cursors
 import helper_funcs
+from SchemDraw import elements as e
 
 class Component(object):
     """
@@ -13,6 +14,8 @@ class Component(object):
         self.branch = None
         self.node_current_in = None
         """:type : circuit.Node"""
+        self.schem_sym = e.RBOX
+        """:type : dict"""
         # node_current_in gives node where current enters (passive sign convention)
 
     @property
@@ -115,6 +118,7 @@ class Impedance(Component):
         self.nodes = nodes
         self.refdes = name
         self.branch = None
+        self.schem_sym = e.RBOX
 
 
 class Resistor(Impedance):
@@ -124,6 +128,7 @@ class Resistor(Impedance):
         self.nodes = nodes
         self.refdes = name
         self.branch = None
+        self.schem_sym = e.RES
 
 
 class Capacitor(Impedance):
@@ -133,6 +138,7 @@ class Capacitor(Impedance):
         self.nodes = nodes
         self.refdes = name
         self.branch = None
+        self.schem_sym = e.CAP
 
 
 class Inductor(Impedance):
@@ -142,6 +148,7 @@ class Inductor(Impedance):
         self.nodes = nodes
         self.refdes = name
         self.branch = None
+        self.schem_sym = e.INDUCTOR
 
 
 class CurrentSource(Component):
@@ -170,6 +177,7 @@ class VoltageSource(Component):
         self.nodes = nodes
         self.refdes = name
         self.branch = None
+        self.schem_sym = e.SOURCE_V
 
     def set_other_node_voltage(self):
         """

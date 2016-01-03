@@ -1,6 +1,7 @@
 import helper_funcs
 import components
 
+
 class Cursor(object):
     """
     In order to traverse a circuit it becomes easier and more intuitive to imagine a cursor moving along branches and
@@ -52,6 +53,9 @@ class Cursor(object):
     def unseen(self, comp_list):
         return filter(lambda comp: comp not in self.components_seen, comp_list)
 
+    def unseen_connected(self):
+        return self.unseen(self.location.connected_comps)
+
     def step_along(self, node):
         """
         steps to a node connected to the current node and marks only
@@ -90,6 +94,10 @@ class Cursor(object):
         """
         self.breadcrumbs.append(self.location)
         return self.step_to(helper_funcs.other_node(self.unseen_vsources_connected()[0], self.location))
+
+    def step_down_unseen_comp(self):
+        self.breadcrumbs.append(self.location)
+        return self.step_to(helper_funcs.other_node(self.unseen_connected()[0], self.location))
 
     def step_back(self):
         self.step_to(self.breadcrumbs.pop())
@@ -204,3 +212,4 @@ class BranchCreatorCursor(Cursor):
 
     def step_along_branch(self):
         return super(BranchCreatorCursor, self).step_along_branch()
+
