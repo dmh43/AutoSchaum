@@ -129,7 +129,7 @@ class Solver(object):
         if node == 0:
             self.solution[-1].ref = sorted(self.solution[-1].circuit.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
         else:
-            self.solution[-1].ref = node
+            self.solution[-1].ref = node #TODO fix this problem with copying circuits. Ref needs to be property. Other attributes tha tshould be properties to avoid this?? Or it can be a node number
 
 
 class SolutionStep(object):

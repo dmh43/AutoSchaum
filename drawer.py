@@ -10,4 +10,7 @@ class Schematic(schem.Drawing):
     def draw_schem(self):
         """Draw the schematic automatically"""
         for comp in self.circuit.component_list: # TODO implement automatic drawing
+            self.add(e.RES, d='right', botlabel='${0}$'.format(comp.refdes))
             print comp.refdes
+        self.draw()
+        self.save('khiri.png')

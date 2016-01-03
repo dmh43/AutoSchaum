@@ -17,6 +17,7 @@ ohms.sub_super_nodes()
 ohms.identify_nontrivial_nonsuper_nodes() # TODO some of these should be moved to solver later
 schem = drawer.Schematic(ohms)
 schem.draw_schem()
+exit()
 my_solution = solver.Solver(ohms)
 my_solution.set_reference_voltage(my_solution.circuit.non_trivial_reduced_nodedict[0])
 my_solution.identify_voltages()
