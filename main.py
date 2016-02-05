@@ -7,7 +7,7 @@ if __handdrawn__:
     from matplotlib import pyplot as plt
     plt.xkcd()
 
-ohms = circuit.Circuit('node_voltage.crt')
+ohms = circuit.Circuit('resources/node_voltage.crt')
 ohms.create_nodes()
 ohms.populate_nodes()
 ohms.identify_nontrivial_nodes()

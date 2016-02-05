@@ -1,5 +1,4 @@
 import SchemDraw as schem
-import SchemDraw.elements as e
 import cursors
 
 
@@ -19,7 +18,7 @@ class Schematic(schem.Drawing):
             schem_cursor.step_back()
             schem_cursor.draw_comps_here('down')
         self.draw()
-        self.save('khiri.png')
+        self.save('resources/khiri.png')
 
 
 class DrawerCursor(cursors.Cursor):
@@ -33,19 +32,19 @@ class DrawerCursor(cursors.Cursor):
         """:type : Schematic"""
 
     def draw_comps_here(self, direc='right'):
-         if self.unseen_connected():
-             if self.unseen_connected() > 1:
-                 self.schem.push()
-             new_comps = self.step_down_unseen_comp()
-             direction = direc
-             if len(new_comps) > 1: # for elements in parallel
-                 for comp in new_comps:
-                     self.schem.push()
-                     self.schem.add(comp.schem_sym, d=direction, botlabel='${0}$'.format(comp.refdes))
-                     self.schem.pop()
-             elif len(new_comps) == 1:
-                 comp = new_comps[0]
-                 self.schem.add(comp.schem_sym, d=direction, botlabel='${0}$'.format(comp.refdes))
-             return new_comps
-         else:
-             return []
+        if self.unseen_connected():
+            if self.unseen_connected() > 1:
+                self.schem.push()
+            new_comps = self.step_down_unseen_comp()
+            direction = direc
+            if len(new_comps) > 1: # for elements in parallel
+                for comp in new_comps:
+                    self.schem.push()
+                    self.schem.add(comp.schem_sym, d=direction, botlabel='${0}$'.format(comp.refdes))
+                    self.schem.pop()
+            elif len(new_comps) == 1:
+                comp = new_comps[0]
+                self.schem.add(comp.schem_sym, d=direction, botlabel='${0}$'.format(comp.refdes))
+            return new_comps
+        else:
+            return []
