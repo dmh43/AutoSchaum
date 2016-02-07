@@ -23,8 +23,8 @@ class Cursor(object):
         self.breadcrumbs = []  # Keep track where you came from
         """:type : list[Node]"""
 
-    def last_component_seen(self):
-        return self.components_seen[-1]
+    # def last_component_seen(self):
+    #     return self.components_seen[-1]
 
     def last_node_seen(self):
         return self.nodes_seen[-1]
