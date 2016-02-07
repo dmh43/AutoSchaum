@@ -1,15 +1,13 @@
 from nose2.compat import unittest
-import sys
-sys.path.append("../")
-import AutoSchaum.cursors as cursors
-import AutoSchaum.circuit as circuit
+import AutoSchaum.AutoSchaum.cursors as cursors
+import AutoSchaum.AutoSchaum.circuit as circuit
 
 def components_to_refdesigs(component_list):
     return [x.refdes for x in component_list]
 
 class CircuitTest(unittest.TestCase):
     def setUp(self):
-        self.my_circuit = circuit.Circuit("resources/my_circuit.crt")
+        self.my_circuit = circuit.Circuit("AutoSchaum/resources/my_circuit.crt")
 
     def test_create_nodes(self):
         self.my_circuit.create_nodes()
@@ -22,7 +20,7 @@ class CursorTest(unittest.TestCase):
     def setUp(self):
         self.my_node = circuit.Node(0)
         self.my_empty_cursor = cursors.Cursor(self.my_node)
-        self.my_circuit = circuit.Circuit("resources/my_circuit.crt")
+        self.my_circuit = circuit.Circuit("AutoSchaum/resources/my_circuit.crt")
         self.my_circuit.create_nodes()
         self.my_circuit.populate_nodes()
         self.my_cursor = cursors.Cursor(self.my_circuit.nodedict[0])
