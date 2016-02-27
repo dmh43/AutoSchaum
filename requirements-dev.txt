@@ -1,0 +1,5 @@
+matplotlib
+sympy
+-e git+https://bitbucket.org/cdelker/schemdraw.git#egg=SchemeDraw
+nose2
+ipython

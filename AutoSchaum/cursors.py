@@ -27,12 +27,22 @@ class Cursor(object):
     #     return self.components_seen[-1]
 
     def last_node_seen(self):
+        """
+        Returns the last node seen by the cursor. If the cursor has not been moved, no nodes have been
+        seen, raises IndexError.
+        """
         return self.nodes_seen[-1]
 
     def vsources_connected(self):
+        """
+        List of VoltageSources connected to the node at loc
+        """
         return filter(lambda comp: isinstance(comp, components.VoltageSource), self.location.connected_comps)
 
     def unseen_vsources_connected(self):
+        """
+        List of VoltageSources connected to node loc  which have not been seen by the cursor
+        """
         return filter(lambda vsource: vsource not in self.components_seen, self.vsources_connected())
 
     def step_to(self, node):
@@ -51,9 +61,15 @@ class Cursor(object):
         return connecting_list
 
     def unseen(self, comp_list):
+        """
+        filter comp_list giving only list of components unseen by the cursors
+        """
         return filter(lambda comp: comp not in self.components_seen, comp_list)
 
     def unseen_connected(self):
+        """
+        List of connected components which have not been seen by the cursor
+        """
         return self.unseen(self.location.connected_comps)
 
     def step_along(self, node):

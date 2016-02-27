@@ -1,7 +1,6 @@
 import circuit
 import solver
 import drawer
-import solver
 
 def main():
     __handdrawn__ = True

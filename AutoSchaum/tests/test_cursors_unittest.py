@@ -30,6 +30,7 @@ class CursorTest(unittest.TestCase):
                          components_to_refdesigs(self.my_cursor.step_to(self.my_circuit.nodedict[1])))
         self.assertEqual(self.my_circuit.nodedict[1],
                          self.my_cursor.last_node_seen())
+        self.assertEqual(self.my_cursor.location, self.my_circuit.nodedict[1])
         
     def test_unseen(self):
         self.assertEqual(self.my_circuit.component_list,
@@ -50,7 +51,15 @@ class CursorTest(unittest.TestCase):
         self.my_cursor.step_to(self.my_circuit.nodedict[0])
         self.assertEqual([],
                          self.my_cursor.unseen_connected())
-        
+
+    def test_step_along(self):
+        first_seen = self.my_cursor.step_along(self.my_circuit.nodedict[1])
+        self.assertEqual(self.my_cursor.location, self.my_circuit.nodedict[1])
+        self.assertEqual("R1", first_seen.refdes)
+        second_seen = self.my_cursor.step_along(self.my_circuit.nodedict[0])
+        self.assertEqual(self.my_cursor.location, self.my_circuit.nodedict[0])
+        self.assertEqual("R2", second_seen.refdes)
+
         
 if __name__ == '__main__':
     unittest.main()
