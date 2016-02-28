@@ -127,9 +127,9 @@ class Solver(object):
         """
         self.solution.append(copy.deepcopy(self.solution[-1]))
         if node == 0:
-            self.solution[-1].ref = sorted(self.solution[-1].circuit.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1]
+            self.solution[-1].ref_node_num = sorted(self.solution[-1].circuit.reduced_nodedict.values(), key = lambda node: node.num_comp_connected)[-1].node_num
         else:
-            self.solution[-1].ref = node #TODO fix this problem with copying circuits. Ref needs to be property. Other attributes tha tshould be properties to avoid this?? Or it can be a node number
+            self.solution[-1].ref_node_num = node.node_num #TODO fix this problem with copying circuits. Ref needs to be property. Other attributes tha tshould be properties to avoid this?? Or it can be a node number
 
 
 class SolutionStep(object):
@@ -153,8 +153,11 @@ class SolutionStep(object):
         self.result = []
         self.circuit = circuit_to_solve
         """:type : Circuit"""
-        self.ref = None
-        """:type : circuit.Node"""
+        self.ref_node_num = 0
+
+    @property
+    def ref(self):
+        return self.circuit.nodedict[self.ref_node_num]
 
 
 class Teacher(object):

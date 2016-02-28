@@ -35,7 +35,6 @@ def main():
     #print(ohms.netlist)
     vivias = solver.Teacher(my_solution)
     vivias.explain()
-    pass
     #print(ohms.numerators)
     #print(ohms.denomenators)
 
