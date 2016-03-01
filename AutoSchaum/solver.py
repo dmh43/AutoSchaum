@@ -103,13 +103,18 @@ class Solver(object):
         for eq in self.solution[-1].solved_eq.values():
             self.solution[-1].result.append(eq.subs(self.solution[-1].known_vars))
 
+    def node_voltage_vars(self):
+        nontrivial_node_names = ["V{0}".format(node.node_num) for node in self.circuit.non_trivial_reduced_nodedict.values()]
+        return [sympy.Symbol(node_name) for node_name in nontrivial_node_names]
+
+
     def solve_eqs(self):
         self.solution.append(copy.deepcopy(self.solution[-1]))
-        self.solution[-1].solved_eq = sympy.solve(self.solution[-1].node_voltage_eqs, self.solution[-1].node_vars)
+        self.solution[-1].solved_eq = sympy.solve(self.solution[-1].node_voltage_eqs, self.node_voltage_vars())
 
     def solve_subbed_eqs(self):
         self.solution.append(copy.deepcopy(self.solution[-1]))
-        self.solution[-1].solved_subbed_eq = sympy.solve(self.solution[-1].subbed_eqs, self.solution[-1].node_vars)
+        self.solution[-1].solved_subbed_eq = sympy.solve(self.solution[-1].subbed_eqs, self.node_voltage_vars())
         # TODO fix this. sypy equations are mutable. An equation is not returned here, subbed_eqs is mutated
 
     def kcl_everywhere(self):
@@ -183,3 +188,4 @@ class Teacher(object):
         print(self.solver.solution[-1].known_vars)
         print("And solving the system of equations using Kramer's rule or equivalent method:")
         print(self.solver.solution[-1].subbed_eqs)
+        print(self.solver.solution[-1].solved_subbed_eq)

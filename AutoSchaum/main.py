@@ -29,7 +29,7 @@ def main():
     #ohms.sub_zero_for_ref()
     my_solution.determine_known_vars()
     my_solution.sub_into_eqs()
-    my_solution.solve_eqs()
+    my_solution.solve_subbed_eqs()
     #print(ohms.nodelist)
     #print(ohms.num_nodes)
     #print(ohms.netlist)
