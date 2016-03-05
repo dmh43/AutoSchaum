@@ -147,8 +147,8 @@ class Node(object):
                 new_current_exp = copy.deepcopy(branch.current_expression)
                 if flip_direction:
                     new_current_exp.flip_dir()
-                current_leaving_node.append(new_current_exp)
-                continue
+                #current_leaving_node.append(new_current_exp)
+                #continue
             while True:
                 new_comp = kcl_cursor.step_down_branch()[0]  #assuming only one component
                 if isinstance(new_comp, components.Resistor):
@@ -570,4 +570,3 @@ class CurrentExp(Direction):
 
     def into_sympy(self):
         self.sympy_expr = sympy.sympify(self.str_expr)
-
